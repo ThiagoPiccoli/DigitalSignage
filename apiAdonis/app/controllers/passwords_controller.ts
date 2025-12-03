@@ -3,22 +3,28 @@ import User from '#models/user'
 import hash from '@adonisjs/core/services/hash'
 
 export default class PasswordsController {
-  public async changePassword({ request, response, bouncer }: HttpContext) {
-    const { username, oldPassword, newPassword } = request.only([
-      'username',
+  public async changePassword({ request, response, bouncer, params }: HttpContext) {
+    const { oldPassword, newPassword, confirmPassword } = request.only([
       'oldPassword',
       'newPassword',
+      'confirmPassword',
     ])
-    const user = await User.findBy('username', username)
+    const user = await User.findOrFail(params.id)
 
     if (!user) {
       return response.notFound({ message: 'User not found' })
     }
 
-    await bouncer.authorize('updateUser', user)
-
     if ((await hash.verify(user.password, oldPassword)) === false) {
       return response.unauthorized({ message: 'Current password is incorrect' })
+    }
+
+    if (newPassword.length < 6) {
+      return response.badRequest({ message: 'New password must be at least 6 characters long' })
+    }
+
+    if (newPassword !== confirmPassword) {
+      return response.badRequest({ message: 'New password and confirmation do not match' })
     }
 
     // Set new password
@@ -28,14 +34,14 @@ export default class PasswordsController {
     return response.ok({ message: 'Password changed successfully' })
   }
 
-  public async adminChangePassword({ request, response }: HttpContext) {
-    const { userId, newPassword } = request.only(['userId', 'newPassword'])
+  public async adminChangePassword({ request, response, params }: HttpContext) {
+    const { newPassword } = request.only(['userId', 'newPassword'])
 
-    const user = await User.findOrFail(userId)
+    const user = await User.findOrFail(params.id)
     user.password = newPassword
     await user.save()
 
-    console.log(`Admin changed password for user ID: ${userId}`)
+    console.log(`Admin changed password for user ID: ${params.id}`)
     return response.ok({ message: 'User password has been changed by admin' })
   }
 }

@@ -30,13 +30,12 @@ export default class UsersController {
   }
 
   public async update({ request, response, params, bouncer }: HttpContext) {
-    const { email, username, password } = await request.validateUsing(updateUserValidator)
+    const { email, username } = await request.validateUsing(updateUserValidator)
     const user = await User.findOrFail(params.id)
     await bouncer.authorize('updateUser', user)
 
     if (email !== undefined) user.email = email
     if (username !== undefined) user.username = username
-    if (password !== undefined) user.password = password
 
     await user.save()
     return response.ok({ user })

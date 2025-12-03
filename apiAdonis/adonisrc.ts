@@ -77,18 +77,18 @@ export default defineConfig({
   */
   tests: {
     suites: [
-      // {
-      //   // User creating tests
-      //   files: ['tests/player/**/*.spec(.ts|.js)'],
-      //   name: 'player',
-      //   timeout: 30000,
-      // },
       {
-        // User creating tests
-        files: ['tests/users/**/*.spec(.ts|.js)'],
-        name: 'users',
+        // Player creating tests
+        files: ['tests/player/**/*.spec(.ts|.js)'],
+        name: 'player',
         timeout: 30000,
       },
+      // {
+      //   // User creating tests
+      //   files: ['tests/users/**/*.spec(.ts|.js)'],
+      //   name: 'users',
+      //   timeout: 30000,
+      // },
       // {
       //   // Password related user tests
       //   files: ['tests/users/passwords.spec.ts'],

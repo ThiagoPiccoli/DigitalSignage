@@ -16,7 +16,6 @@ export default class SessionController {
 
   public async destroy({ auth, response }: HttpContext) {
     const user = await auth.use('api').user!
-    console.log(user)
     await User.accessTokens.delete(user, user.currentAccessToken!.identifier)
     return response.ok({ message: 'Successfully signed out' })
   }

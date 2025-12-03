@@ -49,8 +49,7 @@ test.group('Player', (group) => {
       .set('Authorization', `Bearer ${token}`)
       .send(playerPayload)
       .expect(201)
-    console.log(await User.findOrFail(body.lastModified))
-    console.log(body)
+    console.log(await User.findOrFail(body.lastModified))(body)
   }).skip()
 
   test('422 when missing required fields', async () => {
@@ -126,9 +125,12 @@ test.group('Player', (group) => {
       .send(playerPayload)
       .expect(201)
 
+    console.log('Created player ID for deletion:', createdPlayer.id)
+
     await supertest(BASE_URL)
       .delete(`/player/${createdPlayer.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(204)
+    console.log('Deleted player ID:', createdPlayer.id)
   })
 })

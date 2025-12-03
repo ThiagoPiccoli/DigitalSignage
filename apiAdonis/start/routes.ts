@@ -27,9 +27,12 @@ router.put('/users/:id', [UsersController, 'update']).use(middleware.auth())
 //Admin User routes
 router.post('/users', [UsersController, 'store']).use([middleware.auth(), middleware.admin()])
 router.get('/users', [UsersController, 'index']).use([middleware.auth(), middleware.admin()])
-router.get('/users/:id', [UsersController, 'show']).use([middleware.auth(), middleware.admin()])
+router.get('/users/:id', [UsersController, 'show']).use([middleware.auth()])
 router
   .delete('/users/:id', [UsersController, 'destroy'])
+  .use([middleware.auth(), middleware.admin()])
+router
+  .put('/change-password/admin/:id', [PasswordsController, 'adminChangePassword'])
   .use([middleware.auth(), middleware.admin()])
 
 //Session routes
@@ -37,12 +40,9 @@ router.post('/sessions', [SessionController, 'store'])
 router.delete('/sessions', [SessionController, 'destroy']).use(middleware.auth())
 
 //Password routes
-router.post('/change-password', [PasswordsController, 'changePassword'])
-router
-  .post('/admin-password', [PasswordsController, 'adminChangePassword'])
-  .use([middleware.auth(), middleware.admin()])
+router.post('/change-password/:id', [PasswordsController, 'changePassword']).use(middleware.auth())
 
 //Player routes
-router.post('/player', [PlayerController, 'store']).use(middleware.auth())
+router.post('/player', [PlayerController, 'upload']).use(middleware.auth())
 router.put('/player/:id', [PlayerController, 'update']).use(middleware.auth())
 router.delete('/player/:id', [PlayerController, 'destroy']).use(middleware.auth())

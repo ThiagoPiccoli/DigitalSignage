@@ -1,6 +1,6 @@
 import vine from '@vinejs/vine'
 
-export const createPlayerValidator = vine.compile(
+export const createImageValidator = vine.compile(
   vine.object({
     fileType: vine.string(),
     title: vine.string(),
@@ -12,9 +12,47 @@ export const createPlayerValidator = vine.compile(
       end: vine.string(),
       tz: vine.string(),
     }),
+    durationMs: vine.number(),
+  })
+)
+
+export const createVideoValidator = vine.compile(
+  vine.object({
+    fileType: vine.string(),
+    title: vine.string(),
+    videoUrl: vine.string(),
+    lastModified: vine.number(),
+    schedule: vine.object({
+      days: vine.array(vine.string()),
+      start: vine.string(),
+      end: vine.string(),
+      tz: vine.string(),
+    }),
+  })
+)
+
+export const createHtmlValidator = vine.compile(
+  vine.object({
+    fileType: vine.string(),
+    title: vine.string(),
+    htmlContent: vine.string(),
+    bodyHtml: vine.string().optional(),
+    lastModified: vine.number(),
+    schedule: vine.object({
+      days: vine.array(vine.string()),
+      start: vine.string(),
+      end: vine.string(),
+      tz: vine.string(),
+    }),
     fitMode: vine.string().optional(),
     bgColor: vine.string().optional(),
-    durationMs: vine.number().optional(),
+    textColor: vine.string().optional(),
+    fontFamily: vine.string().optional(),
+    fontSizePx: vine.number().optional(),
+    textAlign: vine.string().optional(),
+    paddingPx: vine.number().optional(),
+    maxWidthPx: vine.number().optional(),
+    durationMs: vine.number(),
   })
 )
 

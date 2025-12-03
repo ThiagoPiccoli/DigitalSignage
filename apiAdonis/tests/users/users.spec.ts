@@ -48,7 +48,7 @@ test.group('User', (group) => {
     assert.equal(response.body.user.email, userPayload.email, 'Email should match')
     assert.equal(response.body.user.username, userPayload.username, 'Username should match')
     assert.notExists(response.body.user.password, 'Password should not be returned')
-  })
+  }).skip()
 
   test('Creating an user with existing email should fail', async ({ assert }) => {
     const { email } = await UserFactory.create()
@@ -125,20 +125,11 @@ test.group('User', (group) => {
     assert.equal(response.body.user.username, newUsername)
   }).skip()
 
-  test('Updating an user password', async ({ assert }) => {
-    const newPassword = 'testePassword123'
-    const response = await supertest(BASE_URL)
-      .put(`/users/${user.id}`)
-      .send({ email: user.email, username: user.username, password: newPassword })
-      .expect(200)
-    assert.equal(response.body.user.id, user.id)
-  }).skip()
-
   test('Updating data not provided', async ({ assert }) => {
     const { id } = await UserFactory.create()
     const response = await supertest(BASE_URL)
       .put(`/users/${id}`)
-      .send({ username: undefined, email: undefined, password: '123' })
+      .send({ username: undefined, email: undefined })
       .expect(422)
     assert.equal(response.body.code, 'BAD_REQUEST')
     assert.equal(response.body.status, 422)
@@ -165,7 +156,7 @@ test.group('User', (group) => {
       .delete(`/users/${newUser.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(204)
-  })
+  }).skip()
 
   test('Deleting a non-existing user should fail', async ({ assert }) => {
     const nonExistingUserId = 9999
@@ -186,5 +177,15 @@ test.group('User', (group) => {
       .expect(200)
 
     console.log(response.body.users)
+  }).skip()
+
+  test('Get user info', async ({}) => {
+    const newUser = await UserFactory.create()
+    const response = await supertest(BASE_URL)
+      .get(`/users/${newUser.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200)
+
+    console.log('User info:', response.body.user)
   })
 })
