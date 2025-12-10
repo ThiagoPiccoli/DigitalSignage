@@ -8,9 +8,7 @@ export default class extends BaseSchema {
       table.increments('id')
       table.string('file_type').notNullable()
       table.string('title').notNullable()
-      table.text('image_url').notNullable()
-      table.string('fit_mode').defaultTo('fit')
-      table.string('bg_color').defaultTo('#ffffff')
+      table.text('file_url').notNullable()
       table.integer('last_modified').unsigned().references('id').inTable('users').notNullable()
       table.integer('duration_ms').defaultTo(10000)
       table.json('schedule').defaultTo(

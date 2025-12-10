@@ -14,6 +14,10 @@ export default class SessionController {
     })
   }
 
+  public async me({ auth, response }: HttpContext) {
+    return response.ok({ user: auth.user || null })
+  }
+
   public async destroy({ auth, response }: HttpContext) {
     const user = await auth.use('api').user!
     await User.accessTokens.delete(user, user.currentAccessToken!.identifier)

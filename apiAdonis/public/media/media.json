@@ -1,0 +1,25 @@
+{
+  "defaults": {
+    "imageDurationMs": 10000,
+    "htmlDurationMs": 15000,
+    "fitMode": "fit",
+    "bgColor": "#000000",
+    "mute": true,
+    "volume": 1,
+    "schedule": {
+      "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ],
+      "start": "00:00",
+      "end": "23:59",
+      "tz": "America/Sao_Paulo"
+    }
+  },
+  "overrides": []
+}
