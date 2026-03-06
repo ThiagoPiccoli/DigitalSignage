@@ -5,11 +5,80 @@ import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import PermMedia from '@mui/icons-material/PermMedia';
-import { Button, InputAdornment, TextField } from '@mui/material';
+import {
+  Avatar,
+  Button,
+  ButtonGroup,
+  InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+} from '@mui/material';
 import { FileUpload, SearchRounded } from '@mui/icons-material';
+import React from 'react';
+import TablePagination from '@mui/material/TablePagination';
+import { useNavigate } from 'react-router-dom';
 
-export default function Header() {
+import EditDialog, { type Row } from '../components/EditDialog';
+import DeleteDialog from '../components/DeleteDialog';
+import SuccessSnackbar from '../components/SuccessSnackbar';
+import PopperMenu from '../components/PopperMenu';
+
+const MOCK_ROWS: Row[] = [
+  { nome: 'Html', tipo: 'HTML', data: '2026-03-06', criador: 'Thiago' },
+  { nome: 'Donut', tipo: 'Vídeo', data: '2026-03-05', criador: 'João' },
+  { nome: 'Éclair', tipo: 'Imagem', data: '2026-03-04', criador: 'Maria' },
+];
+
+const FILTER_OPTIONS = [
+  { label: 'Todos os Avisos', value: 'todos' },
+  { label: 'Html', value: 'html' },
+  { label: 'Vídeos', value: 'vídeo' },
+  { label: 'Imagens', value: 'imagem' },
+] as const;
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const [page, setPage] = React.useState(0);
+  const rowsPerPage = 10;
+
+  const [editRow, setEditRow] = React.useState<Row | null>(null);
+  const [deleteRow, setDeleteRow] = React.useState<Row | null>(null);
+  const [editSuccess, setEditSuccess] = React.useState(false);
+  const [deleteSuccess, setDeleteSuccess] = React.useState(false);
+  const [filter, setFilter] = React.useState<string>('todos');
+  const [fileTypeAnchor, setFileTypeAnchor] =
+    React.useState<null | HTMLElement>(null);
+  const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
+
+  const filteredRows =
+    filter === 'todos'
+      ? MOCK_ROWS
+      : MOCK_ROWS.filter(r => r.tipo.toLowerCase() === filter);
+
+  const togglePopper =
+    (setter: React.Dispatch<React.SetStateAction<HTMLElement | null>>) =>
+    (e: React.MouseEvent<HTMLElement>) =>
+      setter(prev => (prev ? null : e.currentTarget));
+
+  const handleEditSave = (values: Row) => {
+    // TODO: persist changes via API
+    console.log('Saved:', values);
+    setEditRow(null);
+    setEditSuccess(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    // TODO: persist deletion via API
+    console.log('Deleted:', deleteRow);
+    setDeleteRow(null);
+    setDeleteSuccess(true);
+  };
+
   return (
     <Box>
       <AppBar
@@ -17,12 +86,18 @@ export default function Header() {
         sx={{ bgcolor: 'primary.main', display: 'flex' }}
       >
         <Toolbar sx={{ gap: 3 }}>
-          <PermMedia />
+          <Avatar
+            alt="CdTec"
+            src="/logo_ufpel.png"
+            variant="square"
+            sx={{ width: 85, height: 85 }}
+          />
           <Typography
             variant="h6"
             fontWeight="bold"
             display="flex"
             flexGrow={1}
+            fontFamily="sans-serif"
           >
             Mural Digital
           </Typography>
@@ -34,19 +109,28 @@ export default function Header() {
               cursor: 'pointer',
             }}
           >
-            <Box>
-              <Typography variant="body2" fontWeight="bold" flex={2}>
-                Thiago Piccoli
-              </Typography>
-            </Box>
-            <ArrowDropDownIcon />
+            <Button
+              onClick={togglePopper(setMenuAnchor)}
+              variant="text"
+              color="secondary"
+              size="medium"
+              startIcon={<ArrowDropDownIcon />}
+              sx={{ textTransform: 'none', fontWeight: 'bold' }}
+            >
+              Thiago Piccoli
+            </Button>
           </Box>
-          <Button variant="contained" color="secondary">
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => navigate('/login')}
+          >
             Sair
           </Button>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="lg" sx={{ mt: 4, px: 4 }}>
+
+      <Container maxWidth="lg" sx={{ mt: 6 }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Paper
             elevation={10}
@@ -54,7 +138,7 @@ export default function Header() {
               flex: 2,
               p: 2,
               borderRadius: 3,
-              minHeight: '50vh',
+              height: '80vh',
               border: '1px solid',
               borderColor: 'divider',
             }}
@@ -74,9 +158,7 @@ export default function Header() {
                 }}
                 sx={{
                   flex: 3,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 8,
-                  },
+                  '& .MuiOutlinedInput-root': { borderRadius: 8 },
                 }}
               />
               <Button
@@ -84,44 +166,142 @@ export default function Header() {
                 color="primary"
                 sx={{ flex: 1, borderRadius: 2, textTransform: 'none' }}
                 startIcon={<FileUpload />}
+                onClick={togglePopper(setFileTypeAnchor)}
               >
                 Novo Aviso
               </Button>
             </Box>
-          </Paper>
-          <Paper
-            elevation={10}
-            sx={{
-              flex: 1,
-              p: 2,
-              borderRadius: 3,
-              minHeight: '50vh',
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Typography variant="h4" gutterBottom>
-              Box 2
-            </Typography>
-            <Paper
-              elevation={10}
-              sx={{
-                backgroundColor: 'primary.light',
-                flex: 1,
-                p: 2,
-                borderRadius: 3,
-                minHeight: '50vh',
-                border: '1px solid',
-                borderColor: 'divider',
-              }}
+
+            <ButtonGroup
+              variant="outlined"
+              aria-label="Basic button group"
+              fullWidth
+              sx={{ flexGrow: 1, mr: 1, borderRadius: 8 }}
             >
-              <Typography variant="h4" gutterBottom>
-                Box 2
-              </Typography>
-            </Paper>
+              {FILTER_OPTIONS.map(({ label, value }) => (
+                <Button
+                  key={value}
+                  sx={{ textTransform: 'none' }}
+                  variant={filter === value ? 'contained' : 'outlined'}
+                  onClick={() => setFilter(value)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </ButtonGroup>
+
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
+              <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Nome</TableCell>
+                    <TableCell align="right">Tipo</TableCell>
+                    <TableCell align="right">Data</TableCell>
+                    <TableCell align="right">Criador</TableCell>
+                    <TableCell />
+                    <TableCell />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredRows
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map(row => (
+                      <TableRow key={row.nome}>
+                        <TableCell component="th" scope="row">
+                          {row.nome}
+                        </TableCell>
+                        <TableCell align="right">{row.tipo}</TableCell>
+                        <TableCell align="right">{row.data}</TableCell>
+                        <TableCell align="right">{row.criador}</TableCell>
+                        <TableCell align="right">
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            size="small"
+                            onClick={() => setEditRow(row)}
+                          >
+                            Editar
+                          </Button>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            onClick={() => setDeleteRow(row)}
+                          >
+                            Excluir
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <TablePagination
+              component="div"
+              count={filteredRows.length}
+              rowsPerPage={rowsPerPage}
+              rowsPerPageOptions={[]}
+              page={page}
+              onPageChange={(_e, p) => setPage(p)}
+            />
           </Paper>
         </Box>
       </Container>
+
+      {/* Popper: file type chooser */}
+      <PopperMenu
+        anchorEl={fileTypeAnchor}
+        onClose={() => setFileTypeAnchor(null)}
+        placement="bottom-start"
+        width={300}
+        items={[{ label: 'HTML' }, { label: 'Vídeo' }, { label: 'Imagem' }]}
+      />
+
+      {/* Popper: user menu */}
+      <PopperMenu
+        anchorEl={menuAnchor}
+        onClose={() => setMenuAnchor(null)}
+        placement="bottom-end"
+        width={140}
+        items={[
+          { label: 'Perfil', onClick: () => navigate('/login') },
+          { label: 'Configurações' },
+          { label: 'Sair', onClick: () => navigate('/login') },
+        ]}
+      />
+
+      {/* Edit dialog */}
+      <EditDialog
+        row={editRow}
+        onClose={() => setEditRow(null)}
+        onSave={handleEditSave}
+      />
+
+      {/* Delete confirmation */}
+      <DeleteDialog
+        open={Boolean(deleteRow)}
+        title="Confirmar Exclusão"
+        message={`Tem certeza que deseja excluir "${deleteRow?.nome}"?`}
+        onCancel={() => setDeleteRow(null)}
+        onConfirm={handleDeleteConfirm}
+        confirmLabel="Excluir"
+        confirmColor="error"
+      />
+
+      {/* Success snackbars */}
+      <SuccessSnackbar
+        open={editSuccess}
+        onClose={() => setEditSuccess(false)}
+        message="Mídia atualizada com sucesso!"
+      />
+      <SuccessSnackbar
+        open={deleteSuccess}
+        onClose={() => setDeleteSuccess(false)}
+        message="Mídia excluída com sucesso!"
+      />
     </Box>
   );
 }
