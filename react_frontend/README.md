@@ -1,70 +1,96 @@
-# Getting Started with Create React App
+# Mural Digital - Frontend TODO
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## API Endpoint Coverage
 
-## Available Scripts
+### Authentication & Sessions
 
-In the project directory, you can run:
+| API Endpoint                                                | Frontend Status                                            |
+| ----------------------------------------------------------- | ---------------------------------------------------------- |
+| `POST /sessions` (login with email+password, returns token) | Login page is **visual only** - no API call, no state      |
+| `GET /sessions/me` (get current user)                       | **Not implemented**                                        |
+| `DELETE /sessions` (logout, revoke token)                   | "Sair" button just navigates to `/login` - **no API call** |
 
-### `npm start`
+### User Management (admin)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| API Endpoint                                  | Frontend Status  |
+| --------------------------------------------- | ---------------- |
+| `POST /users` (create user, admin only)       | **No UI exists** |
+| `GET /users` (list all users, admin only)     | **No UI exists** |
+| `GET /users/:id` (show user)                  | **No UI exists** |
+| `PUT /users/:id` (update email/username)      | **No UI exists** |
+| `DELETE /users/:id` (delete user, admin only) | **No UI exists** |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Password Management
 
-### `npm test`
+| API Endpoint                                             | Frontend Status  |
+| -------------------------------------------------------- | ---------------- |
+| `POST /change-password/:id` (user changes own password)  | **No UI exists** |
+| `PUT /change-password/admin/:id` (admin resets password) | **No UI exists** |
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Media Player (Video/Image uploads)
 
-### `npm run build`
+| API Endpoint                                       | Frontend Status                                                |
+| -------------------------------------------------- | -------------------------------------------------------------- |
+| `POST /player` (upload video/image file)           | "Video" and "Imagem" buttons are **placeholders** (no handler) |
+| `GET /player` (list all media)                     | **Not implemented** - table uses hardcoded `MOCK_ROWS`         |
+| `GET /player/:id` (show single media)              | **Not implemented**                                            |
+| `PUT /player/:id` (update title/duration/schedule) | Edit dialog **only logs to console**                           |
+| `DELETE /player/:id` (delete media + file)         | Delete dialog **only logs to console**                         |
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### HTML Player (HTML notices)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| API Endpoint                                           | Frontend Status                                                                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /html` (create HTML notice with styling options) | HtmlDialog exists but **only has nome/aviso fields** - missing bgColor, textColor, fontFamily, fontSizePx, textAlign, paddingPx, maxWidthPx |
+| `POST /html/deadline` (create countdown timer)         | **No UI exists**                                                                                                                            |
+| `POST /html/duplicate/:id` (duplicate an HTML notice)  | **No UI exists**                                                                                                                            |
+| `PUT /html/:id` (update HTML notice)                   | **Not implemented**                                                                                                                         |
+| `GET /html` (list all HTML notices)                    | **Not implemented**                                                                                                                         |
+| `GET /html/:id` (show single HTML notice)              | **Not implemented**                                                                                                                         |
+| `DELETE /html/:id` (delete HTML notice + file)         | **Not implemented**                                                                                                                         |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Manifest / Settings
 
-### `npm run eject`
+| API Endpoint                                                                                | Frontend Status     |
+| ------------------------------------------------------------------------------------------- | ------------------- |
+| `POST /defaults` (set global defaults: durations, fitMode, bgColor, mute, volume, schedule) | **No UI exists**    |
+| `GET /manifest` (get manifest)                                                              | **Not implemented** |
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Admin Utilities
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+| API Endpoint                                                             | Frontend Status                                        |
+| ------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `GET /admin/state` (full dashboard state: players + htmlPlayers + users) | **Not used** - should be the data source for Dashboard |
+| `GET /admin/local-ip` (get server LAN IPs)                               | **No UI exists**                                       |
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## What Still Needs to Be Built
 
-## Learn More
+1. **API service layer** - Create an `api.ts` with axios/fetch, base URL config, and token management. Zero API calls exist today.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+2. **Authentication flow** - Wire login form to `POST /sessions`, store the token, create an auth context/provider, add route guards so `/dashboard` requires auth.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+3. **Logout** - Call `DELETE /sessions` and clear the token on "Sair".
 
-### Code Splitting
+4. **Dashboard data loading** - Replace `MOCK_ROWS` with a real call to `GET /admin/state` (or separate calls to `GET /player` + `GET /html`).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+5. **Media upload (Video/Image)** - Build an upload dialog that calls `POST /player` with a file + optional title/duration/schedule. Wire the "Video" and "Imagem" popper buttons.
 
-### Analyzing the Bundle Size
+6. **HTML notice creation** - Expand `HtmlDialog` significantly: the API supports `bgColor`, `textColor`, `fontFamily`, `fontSizePx`, `textAlign`, `paddingPx`, `maxWidthPx`. The current dialog only has `nome` and `aviso`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+7. **Deadline/countdown creation** - Build a dialog for `POST /html/deadline` (title, deadlineISO, colors).
 
-### Making a Progressive Web App
+8. **Duplicate HTML** - Add a "Duplicar" button/action per HTML row calling `POST /html/duplicate/:id`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+9. **Edit media** - Wire `EditDialog` to call `PUT /player/:id` or `PUT /html/:id` depending on type.
 
-### Advanced Configuration
+10. **Delete media** - Wire `DeleteDialog` to call `DELETE /player/:id` or `DELETE /html/:id`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+11. **User management page (admin)** - A full CRUD page for `POST/GET/PUT/DELETE /users`, plus admin password reset.
 
-### Deployment
+12. **Profile/Settings page** - Wire "Perfil" to show user info (`GET /users/:id`), allow updating email/username (`PUT /users/:id`), and changing password (`POST /change-password/:id`).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+13. **"Configuracoes" (Settings) page** - UI for `POST /defaults` to configure global player defaults (image duration, HTML duration, fit mode, mute, volume, schedule).
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+14. **Server IP display** - Use `GET /admin/local-ip` somewhere (useful for connecting digital signage screens to the server).

@@ -27,6 +27,8 @@ import EditDialog, { type Row } from '../components/EditDialog';
 import DeleteDialog from '../components/DeleteDialog';
 import SuccessSnackbar from '../components/SuccessSnackbar';
 import PopperMenu from '../components/PopperMenu';
+import HtmlDialog, { type HtmlRow } from '../components/HtmlDialog';
+import MediaUploadDialog, { type MediaUploadData } from '../components/MediaUploadDialog';
 
 const MOCK_ROWS: Row[] = [
   { nome: 'Html', tipo: 'HTML', data: '2026-03-06', criador: 'Thiago' },
@@ -54,11 +56,19 @@ export default function Dashboard() {
   const [fileTypeAnchor, setFileTypeAnchor] =
     React.useState<null | HTMLElement>(null);
   const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const [search, setSearch] = React.useState('');
 
-  const filteredRows =
-    filter === 'todos'
-      ? MOCK_ROWS
-      : MOCK_ROWS.filter(r => r.tipo.toLowerCase() === filter);
+  // Stores the HtmlRow object directly — stable reference, won't re-trigger useEffect
+  const [html, setHtml] = React.useState<HtmlRow | null>(null);
+  const [htmlSuccess, setHtmlSuccess] = React.useState(false);
+
+  // Media upload dialogs
+  const [uploadType, setUploadType] = React.useState<'video' | 'image' | null>(null);
+  const [uploadSuccess, setUploadSuccess] = React.useState(false);
+
+  const filteredRows = MOCK_ROWS.filter(
+    r => filter === 'todos' || r.tipo.toLowerCase() === filter,
+  ).filter(r => r.nome.toLowerCase().includes(search.toLowerCase()));
 
   const togglePopper =
     (setter: React.Dispatch<React.SetStateAction<HTMLElement | null>>) =>
@@ -66,17 +76,27 @@ export default function Dashboard() {
       setter(prev => (prev ? null : e.currentTarget));
 
   const handleEditSave = (values: Row) => {
-    // TODO: persist changes via API
     console.log('Saved:', values);
     setEditRow(null);
     setEditSuccess(true);
   };
 
   const handleDeleteConfirm = () => {
-    // TODO: persist deletion via API
     console.log('Deleted:', deleteRow);
     setDeleteRow(null);
     setDeleteSuccess(true);
+  };
+
+  const handleHtmlSave = (values: HtmlRow) => {
+    console.log('HTML Create:', values);
+    setHtml(null);
+    setHtmlSuccess(true);
+  };
+
+  const handleUploadSave = (values: MediaUploadData) => {
+    console.log('Media Upload:', values);
+    setUploadType(null);
+    setUploadSuccess(true);
   };
 
   return (
@@ -113,20 +133,13 @@ export default function Dashboard() {
               onClick={togglePopper(setMenuAnchor)}
               variant="text"
               color="secondary"
-              size="medium"
+              size="large"
               startIcon={<ArrowDropDownIcon />}
               sx={{ textTransform: 'none', fontWeight: 'bold' }}
             >
               Thiago Piccoli
             </Button>
           </Box>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={() => navigate('/login')}
-          >
-            Sair
-          </Button>
         </Toolbar>
       </AppBar>
 
@@ -145,6 +158,8 @@ export default function Dashboard() {
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <TextField
+                value={search}
+                onChange={e => setSearch(e.target.value)}
                 size="small"
                 placeholder="Pesquisar no mural..."
                 slotProps={{
@@ -257,7 +272,12 @@ export default function Dashboard() {
         onClose={() => setFileTypeAnchor(null)}
         placement="bottom-start"
         width={300}
-        items={[{ label: 'HTML' }, { label: 'Vídeo' }, { label: 'Imagem' }]}
+        items={[
+          // Opens dialog with a stable initial object
+          { label: 'HTML', onClick: () => setHtml({ nome: '', aviso: '' }) },
+          { label: 'Vídeo', onClick: () => setUploadType('video') },
+          { label: 'Imagem', onClick: () => setUploadType('image') },
+        ]}
       />
 
       {/* Popper: user menu */}
@@ -267,8 +287,8 @@ export default function Dashboard() {
         placement="bottom-end"
         width={140}
         items={[
-          { label: 'Perfil', onClick: () => navigate('/login') },
-          { label: 'Configurações' },
+          { label: 'Perfil', onClick: () => navigate('/perfil') },
+          { label: 'Configurações', onClick: () => navigate('/configuracoes') },
           { label: 'Sair', onClick: () => navigate('/login') },
         ]}
       />
@@ -291,6 +311,21 @@ export default function Dashboard() {
         confirmColor="error"
       />
 
+      {/* HTML dialog — row is passed directly as stable state */}
+      <HtmlDialog
+        row={html}
+        onClose={() => setHtml(null)}
+        onSave={handleHtmlSave}
+      />
+
+      {/* Media upload dialog (Video / Image) */}
+      <MediaUploadDialog
+        open={Boolean(uploadType)}
+        type={uploadType ?? 'video'}
+        onClose={() => setUploadType(null)}
+        onSave={handleUploadSave}
+      />
+
       {/* Success snackbars */}
       <SuccessSnackbar
         open={editSuccess}
@@ -301,6 +336,16 @@ export default function Dashboard() {
         open={deleteSuccess}
         onClose={() => setDeleteSuccess(false)}
         message="Mídia excluída com sucesso!"
+      />
+      <SuccessSnackbar
+        open={htmlSuccess}
+        onClose={() => setHtmlSuccess(false)}
+        message="Aviso HTML criado com sucesso!"
+      />
+      <SuccessSnackbar
+        open={uploadSuccess}
+        onClose={() => setUploadSuccess(false)}
+        message="Mídia enviada com sucesso!"
       />
     </Box>
   );
