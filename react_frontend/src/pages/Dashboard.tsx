@@ -1,12 +1,7 @@
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import {
-  Avatar,
   Button,
   ButtonGroup,
   InputAdornment,
@@ -21,30 +16,43 @@ import {
 import { FileUpload, SearchRounded } from '@mui/icons-material';
 import React from 'react';
 import TablePagination from '@mui/material/TablePagination';
-import { useNavigate } from 'react-router-dom';
-
+import TopBar from '../components/TopBar';
 import EditDialog, { type Row } from '../components/EditDialog';
 import DeleteDialog from '../components/DeleteDialog';
 import SuccessSnackbar from '../components/SuccessSnackbar';
 import PopperMenu from '../components/PopperMenu';
-import HtmlDialog, { type HtmlRow } from '../components/HtmlDialog';
-import MediaUploadDialog, { type MediaUploadData } from '../components/MediaUploadDialog';
+import AvisoDialog, { type AvisoRow } from '../components/AvisoDialog';
+import ContadorDialog, { type ContadorRow } from '../components/ContadorDialog';
+import MediaUploadDialog, {
+  type MediaUploadData,
+} from '../components/MediaUploadDialog';
 
 const MOCK_ROWS: Row[] = [
-  { nome: 'Html', tipo: 'HTML', data: '2026-03-06', criador: 'Thiago' },
+  {
+    nome: 'Comunicado Importante',
+    tipo: 'Aviso',
+    data: '2026-03-06',
+    criador: 'Thiago',
+  },
+  {
+    nome: 'Prazo do Projeto',
+    tipo: 'Contador',
+    data: '2026-03-06',
+    criador: 'Thiago',
+  },
   { nome: 'Donut', tipo: 'Vídeo', data: '2026-03-05', criador: 'João' },
   { nome: 'Éclair', tipo: 'Imagem', data: '2026-03-04', criador: 'Maria' },
 ];
 
 const FILTER_OPTIONS = [
   { label: 'Todos os Avisos', value: 'todos' },
-  { label: 'Html', value: 'html' },
+  { label: 'Avisos', value: 'aviso' },
+  { label: 'Contadores', value: 'contador' },
   { label: 'Vídeos', value: 'vídeo' },
   { label: 'Imagens', value: 'imagem' },
 ] as const;
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const [page, setPage] = React.useState(0);
   const rowsPerPage = 10;
 
@@ -55,15 +63,20 @@ export default function Dashboard() {
   const [filter, setFilter] = React.useState<string>('todos');
   const [fileTypeAnchor, setFileTypeAnchor] =
     React.useState<null | HTMLElement>(null);
-  const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
   const [search, setSearch] = React.useState('');
 
-  // Stores the HtmlRow object directly — stable reference, won't re-trigger useEffect
-  const [html, setHtml] = React.useState<HtmlRow | null>(null);
-  const [htmlSuccess, setHtmlSuccess] = React.useState(false);
+  // Aviso dialog state
+  const [aviso, setAviso] = React.useState<AvisoRow | null>(null);
+  const [avisoSuccess, setAvisoSuccess] = React.useState(false);
+
+  // Contador dialog state
+  const [contador, setContador] = React.useState<ContadorRow | null>(null);
+  const [contadorSuccess, setContadorSuccess] = React.useState(false);
 
   // Media upload dialogs
-  const [uploadType, setUploadType] = React.useState<'video' | 'image' | null>(null);
+  const [uploadType, setUploadType] = React.useState<'video' | 'image' | null>(
+    null,
+  );
   const [uploadSuccess, setUploadSuccess] = React.useState(false);
 
   const filteredRows = MOCK_ROWS.filter(
@@ -87,10 +100,16 @@ export default function Dashboard() {
     setDeleteSuccess(true);
   };
 
-  const handleHtmlSave = (values: HtmlRow) => {
-    console.log('HTML Create:', values);
-    setHtml(null);
-    setHtmlSuccess(true);
+  const handleAvisoSave = (values: AvisoRow) => {
+    console.log('Aviso Create:', values);
+    setAviso(null);
+    setAvisoSuccess(true);
+  };
+
+  const handleContadorSave = (values: ContadorRow) => {
+    console.log('Contador Create:', values);
+    setContador(null);
+    setContadorSuccess(true);
   };
 
   const handleUploadSave = (values: MediaUploadData) => {
@@ -101,47 +120,7 @@ export default function Dashboard() {
 
   return (
     <Box>
-      <AppBar
-        position="sticky"
-        sx={{ bgcolor: 'primary.main', display: 'flex' }}
-      >
-        <Toolbar sx={{ gap: 3 }}>
-          <Avatar
-            alt="CdTec"
-            src="/logo_ufpel.png"
-            variant="square"
-            sx={{ width: 85, height: 85 }}
-          />
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            display="flex"
-            flexGrow={1}
-            fontFamily="sans-serif"
-          >
-            Mural Digital
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              cursor: 'pointer',
-            }}
-          >
-            <Button
-              onClick={togglePopper(setMenuAnchor)}
-              variant="text"
-              color="secondary"
-              size="large"
-              startIcon={<ArrowDropDownIcon />}
-              sx={{ textTransform: 'none', fontWeight: 'bold' }}
-            >
-              Thiago Piccoli
-            </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
+      <TopBar />
 
       <Container maxWidth="lg" sx={{ mt: 6 }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -273,23 +252,13 @@ export default function Dashboard() {
         placement="bottom-start"
         width={300}
         items={[
-          // Opens dialog with a stable initial object
-          { label: 'HTML', onClick: () => setHtml({ nome: '', aviso: '' }) },
+          { label: 'Aviso', onClick: () => setAviso({ nome: '', aviso: '' }) },
+          {
+            label: 'Contador',
+            onClick: () => setContador({ nome: '', deadlineISO: '' }),
+          },
           { label: 'Vídeo', onClick: () => setUploadType('video') },
           { label: 'Imagem', onClick: () => setUploadType('image') },
-        ]}
-      />
-
-      {/* Popper: user menu */}
-      <PopperMenu
-        anchorEl={menuAnchor}
-        onClose={() => setMenuAnchor(null)}
-        placement="bottom-end"
-        width={140}
-        items={[
-          { label: 'Perfil', onClick: () => navigate('/perfil') },
-          { label: 'Configurações', onClick: () => navigate('/configuracoes') },
-          { label: 'Sair', onClick: () => navigate('/login') },
         ]}
       />
 
@@ -311,11 +280,18 @@ export default function Dashboard() {
         confirmColor="error"
       />
 
-      {/* HTML dialog — row is passed directly as stable state */}
-      <HtmlDialog
-        row={html}
-        onClose={() => setHtml(null)}
-        onSave={handleHtmlSave}
+      {/* Aviso dialog */}
+      <AvisoDialog
+        row={aviso}
+        onClose={() => setAviso(null)}
+        onSave={handleAvisoSave}
+      />
+
+      {/* Contador dialog */}
+      <ContadorDialog
+        row={contador}
+        onClose={() => setContador(null)}
+        onSave={handleContadorSave}
       />
 
       {/* Media upload dialog (Video / Image) */}
@@ -338,9 +314,14 @@ export default function Dashboard() {
         message="Mídia excluída com sucesso!"
       />
       <SuccessSnackbar
-        open={htmlSuccess}
-        onClose={() => setHtmlSuccess(false)}
-        message="Aviso HTML criado com sucesso!"
+        open={avisoSuccess}
+        onClose={() => setAvisoSuccess(false)}
+        message="Aviso criado com sucesso!"
+      />
+      <SuccessSnackbar
+        open={contadorSuccess}
+        onClose={() => setContadorSuccess(false)}
+        message="Contador criado com sucesso!"
       />
       <SuccessSnackbar
         open={uploadSuccess}

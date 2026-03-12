@@ -1,21 +1,14 @@
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { Avatar, Button, Divider, TextField } from '@mui/material';
+import { Button, Divider, TextField } from '@mui/material';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
-import PopperMenu from '../components/PopperMenu';
+import TopBar from '../components/TopBar';
 import SuccessSnackbar from '../components/SuccessSnackbar';
 
 export default function Perfil() {
-  const navigate = useNavigate();
-  const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
-
   // Profile fields
   const [email, setEmail] = React.useState('thiago@email.com');
   const [username, setUsername] = React.useState('Thiago Piccoli');
@@ -26,11 +19,6 @@ export default function Perfil() {
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [passwordSuccess, setPasswordSuccess] = React.useState(false);
-
-  const togglePopper =
-    (setter: React.Dispatch<React.SetStateAction<HTMLElement | null>>) =>
-    (e: React.MouseEvent<HTMLElement>) =>
-      setter(prev => (prev ? null : e.currentTarget));
 
   const handleProfileSave = () => {
     console.log('Profile updated:', { email, username });
@@ -51,47 +39,7 @@ export default function Perfil() {
 
   return (
     <Box>
-      <AppBar
-        position="sticky"
-        sx={{ bgcolor: 'primary.main', display: 'flex' }}
-      >
-        <Toolbar sx={{ gap: 3 }}>
-          <Avatar
-            alt="CdTec"
-            src="/logo_ufpel.png"
-            variant="square"
-            sx={{ width: 85, height: 85 }}
-          />
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            display="flex"
-            flexGrow={1}
-            fontFamily="sans-serif"
-          >
-            Mural Digital
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              cursor: 'pointer',
-            }}
-          >
-            <Button
-              onClick={togglePopper(setMenuAnchor)}
-              variant="text"
-              color="secondary"
-              size="large"
-              startIcon={<ArrowDropDownIcon />}
-              sx={{ textTransform: 'none', fontWeight: 'bold' }}
-            >
-              Thiago Piccoli
-            </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
+      <TopBar />
 
       <Container maxWidth="sm" sx={{ mt: 6 }}>
         {/* Profile info */}
@@ -180,19 +128,6 @@ export default function Perfil() {
           </Box>
         </Paper>
       </Container>
-
-      {/* Popper: user menu */}
-      <PopperMenu
-        anchorEl={menuAnchor}
-        onClose={() => setMenuAnchor(null)}
-        placement="bottom-end"
-        width={140}
-        items={[
-          { label: 'Perfil', onClick: () => navigate('/perfil') },
-          { label: 'Configurações', onClick: () => navigate('/configuracoes') },
-          { label: 'Sair', onClick: () => navigate('/login') },
-        ]}
-      />
 
       <SuccessSnackbar
         open={profileSuccess}

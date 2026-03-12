@@ -1,12 +1,9 @@
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import TopBar from '../components/TopBar';
 import {
-  Avatar,
   Button,
   FormControl,
   FormControlLabel,
@@ -18,9 +15,7 @@ import {
   TextField,
 } from '@mui/material';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
-import PopperMenu from '../components/PopperMenu';
 import SuccessSnackbar from '../components/SuccessSnackbar';
 
 const DAYS_OPTIONS = [
@@ -34,13 +29,9 @@ const DAYS_OPTIONS = [
 ] as const;
 
 export default function Configuracoes() {
-  const navigate = useNavigate();
-  const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
 
   // Manifest defaults
-  const [imageDurationMs, setImageDurationMs] = React.useState(10000);
-  const [htmlDurationMs, setHtmlDurationMs] = React.useState(15000);
   const [fitMode, setFitMode] = React.useState('fit');
   const [bgColor, setBgColor] = React.useState('#000000');
   const [mute, setMute] = React.useState(true);
@@ -60,11 +51,6 @@ export default function Configuracoes() {
   // Server info
   const [serverIps] = React.useState<string[]>([]);
 
-  const togglePopper =
-    (setter: React.Dispatch<React.SetStateAction<HTMLElement | null>>) =>
-    (e: React.MouseEvent<HTMLElement>) =>
-      setter(prev => (prev ? null : e.currentTarget));
-
   const toggleDay = (day: string) => {
     setScheduleDays(prev =>
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day],
@@ -73,8 +59,6 @@ export default function Configuracoes() {
 
   const handleSave = () => {
     console.log('Settings saved:', {
-      imageDurationMs,
-      htmlDurationMs,
       fitMode,
       bgColor,
       mute,
@@ -91,47 +75,7 @@ export default function Configuracoes() {
 
   return (
     <Box>
-      <AppBar
-        position="sticky"
-        sx={{ bgcolor: 'primary.main', display: 'flex' }}
-      >
-        <Toolbar sx={{ gap: 3 }}>
-          <Avatar
-            alt="CdTec"
-            src="/logo_ufpel.png"
-            variant="square"
-            sx={{ width: 85, height: 85 }}
-          />
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            display="flex"
-            flexGrow={1}
-            fontFamily="sans-serif"
-          >
-            Mural Digital
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              cursor: 'pointer',
-            }}
-          >
-            <Button
-              onClick={togglePopper(setMenuAnchor)}
-              variant="text"
-              color="secondary"
-              size="large"
-              startIcon={<ArrowDropDownIcon />}
-              sx={{ textTransform: 'none', fontWeight: 'bold' }}
-            >
-              Thiago Piccoli
-            </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
+      <TopBar />
 
       <Container maxWidth="sm" sx={{ mt: 6 }}>
         {/* Player defaults */}
@@ -149,20 +93,6 @@ export default function Configuracoes() {
             Padrões do Player
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <TextField
-              label="Duração Imagem (ms)"
-              type="number"
-              fullWidth
-              value={imageDurationMs}
-              onChange={e => setImageDurationMs(Number(e.target.value))}
-            />
-            <TextField
-              label="Duração HTML (ms)"
-              type="number"
-              fullWidth
-              value={htmlDurationMs}
-              onChange={e => setHtmlDurationMs(Number(e.target.value))}
-            />
             <FormControl fullWidth>
               <InputLabel>Modo de Exibição</InputLabel>
               <Select
@@ -333,19 +263,6 @@ export default function Configuracoes() {
           </Button>
         </Box>
       </Container>
-
-      {/* Popper: user menu */}
-      <PopperMenu
-        anchorEl={menuAnchor}
-        onClose={() => setMenuAnchor(null)}
-        placement="bottom-end"
-        width={140}
-        items={[
-          { label: 'Perfil', onClick: () => navigate('/perfil') },
-          { label: 'Configurações', onClick: () => navigate('/configuracoes') },
-          { label: 'Sair', onClick: () => navigate('/login') },
-        ]}
-      />
 
       <SuccessSnackbar
         open={saveSuccess}

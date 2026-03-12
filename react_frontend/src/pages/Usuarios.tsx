@@ -1,12 +1,8 @@
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import TopBar from '../components/TopBar';
 import {
-  Avatar,
   Button,
   Chip,
   Table,
@@ -27,7 +23,6 @@ import {
 import { SearchRounded, PersonAdd } from '@mui/icons-material';
 import React from 'react';
 import TablePagination from '@mui/material/TablePagination';
-import { useNavigate } from 'react-router-dom';
 
 import PopperMenu from '../components/PopperMenu';
 import DeleteDialog from '../components/DeleteDialog';
@@ -41,16 +36,19 @@ type User = {
 };
 
 const MOCK_USERS: User[] = [
-  { id: 1, email: 'thiago@email.com', username: 'Thiago Piccoli', isAdmin: true },
+  {
+    id: 1,
+    email: 'thiago@email.com',
+    username: 'Thiago Piccoli',
+    isAdmin: true,
+  },
   { id: 2, email: 'joao@email.com', username: 'João Silva', isAdmin: false },
   { id: 3, email: 'maria@email.com', username: 'Maria Souza', isAdmin: false },
 ];
 
 export default function Usuarios() {
-  const navigate = useNavigate();
   const [page, setPage] = React.useState(0);
   const rowsPerPage = 10;
-  const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
   const [search, setSearch] = React.useState('');
 
   // Create dialog
@@ -74,6 +72,7 @@ export default function Usuarios() {
   // Admin reset password dialog
   const [resetUser, setResetUser] = React.useState<User | null>(null);
   const [resetPassword, setResetPassword] = React.useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = React.useState('');
   const [resetSuccess, setResetSuccess] = React.useState(false);
 
   const filteredUsers = MOCK_USERS.filter(
@@ -82,11 +81,6 @@ export default function Usuarios() {
       u.email.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const togglePopper =
-    (setter: React.Dispatch<React.SetStateAction<HTMLElement | null>>) =>
-    (e: React.MouseEvent<HTMLElement>) =>
-      setter(prev => (prev ? null : e.currentTarget));
-
   const handleOpenEdit = (user: User) => {
     setEditUser(user);
     setEditEmail(user.email);
@@ -94,13 +88,22 @@ export default function Usuarios() {
   };
 
   const handleEditSave = () => {
-    console.log('User updated:', { id: editUser?.id, email: editEmail, username: editUsername });
+    console.log('User updated:', {
+      id: editUser?.id,
+      email: editEmail,
+      username: editUsername,
+    });
     setEditUser(null);
     setEditSuccess(true);
   };
 
   const handleCreateSave = () => {
-    console.log('User created:', { email: newEmail, username: newUsername, password: newPassword, isAdmin: newIsAdmin });
+    console.log('User created:', {
+      email: newEmail,
+      username: newUsername,
+      password: newPassword,
+      isAdmin: newIsAdmin,
+    });
     setCreateOpen(false);
     setNewEmail('');
     setNewUsername('');
@@ -119,52 +122,13 @@ export default function Usuarios() {
     console.log('Password reset for:', resetUser?.id, 'new:', resetPassword);
     setResetUser(null);
     setResetPassword('');
+    setResetPasswordConfirm('');
     setResetSuccess(true);
   };
 
   return (
     <Box>
-      <AppBar
-        position="sticky"
-        sx={{ bgcolor: 'primary.main', display: 'flex' }}
-      >
-        <Toolbar sx={{ gap: 3 }}>
-          <Avatar
-            alt="CdTec"
-            src="/logo_ufpel.png"
-            variant="square"
-            sx={{ width: 85, height: 85 }}
-          />
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            display="flex"
-            flexGrow={1}
-            fontFamily="sans-serif"
-          >
-            Mural Digital
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              cursor: 'pointer',
-            }}
-          >
-            <Button
-              onClick={togglePopper(setMenuAnchor)}
-              variant="text"
-              color="secondary"
-              size="large"
-              startIcon={<ArrowDropDownIcon />}
-              sx={{ textTransform: 'none', fontWeight: 'bold' }}
-            >
-              Thiago Piccoli
-            </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
+      <TopBar />
 
       <Container maxWidth="lg" sx={{ mt: 6 }}>
         <Paper
@@ -283,21 +247,13 @@ export default function Usuarios() {
         </Paper>
       </Container>
 
-      {/* Popper: user menu */}
-      <PopperMenu
-        anchorEl={menuAnchor}
-        onClose={() => setMenuAnchor(null)}
-        placement="bottom-end"
-        width={140}
-        items={[
-          { label: 'Perfil', onClick: () => navigate('/perfil') },
-          { label: 'Configurações', onClick: () => navigate('/configuracoes') },
-          { label: 'Sair', onClick: () => navigate('/login') },
-        ]}
-      />
-
       {/* Create user dialog */}
-      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Novo Usuário</DialogTitle>
         <DialogContent
           sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
@@ -348,7 +304,12 @@ export default function Usuarios() {
       </Dialog>
 
       {/* Edit user dialog */}
-      <Dialog open={Boolean(editUser)} onClose={() => setEditUser(null)} fullWidth maxWidth="sm">
+      <Dialog
+        open={Boolean(editUser)}
+        onClose={() => setEditUser(null)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Editar Usuário</DialogTitle>
         <DialogContent
           sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
@@ -372,18 +333,19 @@ export default function Usuarios() {
           <Button onClick={() => setEditUser(null)} color="inherit">
             Cancelar
           </Button>
-          <Button
-            onClick={handleEditSave}
-            variant="contained"
-            color="primary"
-          >
+          <Button onClick={handleEditSave} variant="contained" color="primary">
             Salvar
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Admin reset password dialog */}
-      <Dialog open={Boolean(resetUser)} onClose={() => setResetUser(null)} fullWidth maxWidth="sm">
+      <Dialog
+        open={Boolean(resetUser)}
+        onClose={() => setResetUser(null)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Resetar Senha — {resetUser?.username}</DialogTitle>
         <DialogContent
           sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
@@ -396,6 +358,23 @@ export default function Usuarios() {
             onChange={e => setResetPassword(e.target.value)}
             sx={{ mt: 1 }}
           />
+          <TextField
+            label="Confirmar Nova Senha"
+            type="password"
+            fullWidth
+            value={resetPasswordConfirm}
+            onChange={e => setResetPasswordConfirm(e.target.value)}
+            error={
+              resetPasswordConfirm.length > 0 &&
+              resetPassword !== resetPasswordConfirm
+            }
+            helperText={
+              resetPasswordConfirm.length > 0 &&
+              resetPassword !== resetPasswordConfirm
+                ? 'As senhas não coincidem'
+                : ''
+            }
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setResetUser(null)} color="inherit">
@@ -405,6 +384,7 @@ export default function Usuarios() {
             onClick={handleResetSave}
             variant="contained"
             color="warning"
+            disabled={!resetPassword || resetPassword !== resetPasswordConfirm}
           >
             Resetar
           </Button>
