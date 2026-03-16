@@ -24,7 +24,6 @@ import { SearchRounded, PersonAdd } from '@mui/icons-material';
 import React from 'react';
 import TablePagination from '@mui/material/TablePagination';
 
-import PopperMenu from '../components/PopperMenu';
 import DeleteDialog from '../components/DeleteDialog';
 import SuccessSnackbar from '../components/SuccessSnackbar';
 

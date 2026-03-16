@@ -10,6 +10,7 @@ export default class SessionController {
       id: user.id,
       email: user.email,
       username: user.username,
+      isAdmin: Boolean(user.isAdmin),
       token: token.value!.release(),
     })
   }

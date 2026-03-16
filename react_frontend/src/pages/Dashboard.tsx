@@ -16,8 +16,10 @@ import {
 import { FileUpload, SearchRounded } from '@mui/icons-material';
 import React from 'react';
 import TablePagination from '@mui/material/TablePagination';
+import Typography from '@mui/material/Typography';
+import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
-import EditDialog, { type Row } from '../components/EditDialog';
+import EditDialog, { type Row, type EditPayload } from '../components/EditDialog';
 import DeleteDialog from '../components/DeleteDialog';
 import SuccessSnackbar from '../components/SuccessSnackbar';
 import PopperMenu from '../components/PopperMenu';
@@ -26,6 +28,7 @@ import ContadorDialog, { type ContadorRow } from '../components/ContadorDialog';
 import MediaUploadDialog, {
   type MediaUploadData,
 } from '../components/MediaUploadDialog';
+import { api } from '../api';
 
 const MOCK_ROWS: Row[] = [
   {
@@ -52,9 +55,26 @@ const FILTER_OPTIONS = [
   { label: 'Imagens', value: 'imagem' },
 ] as const;
 
-export default function Dashboard() {
+interface DashboardProps {
+  adminMode?: boolean;
+}
+
+export default function Dashboard({ adminMode = false }: DashboardProps) {
+  const navigate = useNavigate();
   const [page, setPage] = React.useState(0);
   const rowsPerPage = 10;
+
+  // Admin IP address state
+  const [serverIps, setServerIps] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (adminMode) {
+      api('/admin/local-ip')
+        .then(res => res.json())
+        .then(data => setServerIps(data.ips ?? []))
+        .catch(() => setServerIps([]));
+    }
+  }, [adminMode]);
 
   const [editRow, setEditRow] = React.useState<Row | null>(null);
   const [deleteRow, setDeleteRow] = React.useState<Row | null>(null);
@@ -88,7 +108,7 @@ export default function Dashboard() {
     (e: React.MouseEvent<HTMLElement>) =>
       setter(prev => (prev ? null : e.currentTarget));
 
-  const handleEditSave = (values: Row) => {
+  const handleEditSave = (values: EditPayload) => {
     console.log('Saved:', values);
     setEditRow(null);
     setEditSuccess(true);
@@ -123,6 +143,59 @@ export default function Dashboard() {
       <TopBar />
 
       <Container maxWidth="lg" sx={{ mt: 6 }}>
+        {adminMode && (
+          <Paper
+            elevation={10}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: { xs: 'flex-start', md: 'center' },
+                gap: 2,
+                flexDirection: { xs: 'column', md: 'row' },
+              }}
+            >
+              <Box>
+                <Typography variant="h5" fontWeight="bold">
+                  Painel Administrativo
+                </Typography>
+                <Typography color="text.secondary">
+                  Gerencie usuários e configurações globais do mural a partir daqui.
+                </Typography>
+                {serverIps.length > 0 && (
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    <strong>IP do Servidor:</strong> {serverIps.join(', ')}
+                  </Typography>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  sx={{ textTransform: 'none' }}
+                  onClick={() => navigate('/usuarios')}
+                >
+                  Lista de Usuários
+                </Button>
+                <Button
+                  variant="contained"
+                  sx={{ textTransform: 'none' }}
+                  onClick={() => navigate('/configuracoes')}
+                >
+                  Configurações
+                </Button>
+              </Box>
+            </Box>
+          </Paper>
+        )}
+
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Paper
             elevation={10}
@@ -162,7 +235,7 @@ export default function Dashboard() {
                 startIcon={<FileUpload />}
                 onClick={togglePopper(setFileTypeAnchor)}
               >
-                Novo Aviso
+                {adminMode ? 'Novo Conteúdo' : 'Novo Aviso'}
               </Button>
             </Box>
 

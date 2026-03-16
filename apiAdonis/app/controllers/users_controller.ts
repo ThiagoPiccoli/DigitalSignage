@@ -55,6 +55,8 @@ export default class UsersController {
 
   public async destroy({ response, params }: HttpContext) {
     const user = await User.findOrFail(params.id)
+    await Player.query().where('last_modified', user.id).delete()
+    await HtmlPlayer.query().where('last_modified', user.id).delete()
     await user.delete()
     return response.noContent()
   }

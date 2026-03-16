@@ -17,7 +17,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column({ isPrimary: true })
   declare id: number
 
-  @column()
+  @column({
+    serialize: (value: number | boolean) => Boolean(value),
+  })
   declare isAdmin: boolean
 
   @column()

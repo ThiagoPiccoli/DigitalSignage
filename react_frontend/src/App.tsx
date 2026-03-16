@@ -1,19 +1,65 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from 'pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Perfil from './pages/Perfil';
 import Configuracoes from './pages/Configuracoes';
 import Usuarios from './pages/Usuarios';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+import { getHomePath, getSessionUser } from './auth';
+
+function DashboardRedirect() {
+  return <Navigate to={getHomePath(getSessionUser())} replace />;
+}
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<DashboardRedirect />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/perfil" element={<Perfil />} />
-        <Route path="/configuracoes" element={<Configuracoes />} />
-        <Route path="/usuarios" element={<Usuarios />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/perfil"
+          element={
+            <ProtectedRoute>
+              <Perfil />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/configuracoes"
+          element={
+            <AdminRoute>
+              <Configuracoes />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/usuarios"
+          element={
+            <AdminRoute>
+              <Usuarios />
+            </AdminRoute>
+          }
+        />
+        <Route path="*" element={<DashboardRedirect />} />
       </Routes>
     </BrowserRouter>
   );

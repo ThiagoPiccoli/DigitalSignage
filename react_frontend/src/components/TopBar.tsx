@@ -8,6 +8,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import PopperMenu from './PopperMenu';
+import { clearSession, getHomePath, getSessionUser } from '../auth';
 
 interface TopBarProps {
   username?: string;
@@ -16,6 +17,8 @@ interface TopBarProps {
 export default function TopBar({ username = 'Thiago Piccoli' }: TopBarProps) {
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const sessionUser = getSessionUser();
+  const displayName = sessionUser?.username ?? username;
 
   const toggleMenu = (e: React.MouseEvent<HTMLElement>) =>
     setMenuAnchor(prev => (prev ? null : e.currentTarget));
@@ -25,7 +28,7 @@ export default function TopBar({ username = 'Thiago Piccoli' }: TopBarProps) {
       <AppBar position="sticky" sx={{ bgcolor: 'primary.main' }}>
         <Toolbar sx={{ gap: 1 }}>
           <Box
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(getHomePath(sessionUser))}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -63,7 +66,7 @@ export default function TopBar({ username = 'Thiago Piccoli' }: TopBarProps) {
             startIcon={<ArrowDropDownIcon />}
             sx={{ textTransform: 'none', fontWeight: 'bold' }}
           >
-            {username}
+            {displayName}
           </Button>
         </Toolbar>
       </AppBar>
@@ -75,8 +78,13 @@ export default function TopBar({ username = 'Thiago Piccoli' }: TopBarProps) {
         width={160}
         items={[
           { label: 'Perfil', onClick: () => navigate('/perfil') },
-          { label: 'Configurações', onClick: () => navigate('/configuracoes') },
-          { label: 'Sair', onClick: () => navigate('/login') },
+          {
+            label: 'Sair',
+            onClick: () => {
+              clearSession();
+              navigate('/login');
+            },
+          },
         ]}
       />
     </>
