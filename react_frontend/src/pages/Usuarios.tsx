@@ -21,11 +21,12 @@ import {
   DialogActions,
 } from '@mui/material';
 import { SearchRounded, PersonAdd } from '@mui/icons-material';
-import React from 'react';
+import React, { useEffect } from 'react';
 import TablePagination from '@mui/material/TablePagination';
 
 import DeleteDialog from '../components/DeleteDialog';
 import SuccessSnackbar from '../components/SuccessSnackbar';
+import { api } from 'api';
 
 type User = {
   id: number;
@@ -33,17 +34,6 @@ type User = {
   username: string;
   isAdmin: boolean;
 };
-
-const MOCK_USERS: User[] = [
-  {
-    id: 1,
-    email: 'thiago@email.com',
-    username: 'Thiago Piccoli',
-    isAdmin: true,
-  },
-  { id: 2, email: 'joao@email.com', username: 'João Silva', isAdmin: false },
-  { id: 3, email: 'maria@email.com', username: 'Maria Souza', isAdmin: false },
-];
 
 export default function Usuarios() {
   const [page, setPage] = React.useState(0);
@@ -56,13 +46,8 @@ export default function Usuarios() {
   const [newUsername, setNewUsername] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
   const [newIsAdmin, setNewIsAdmin] = React.useState(false);
+  const [createError, setCreateError] = React.useState('');
   const [createSuccess, setCreateSuccess] = React.useState(false);
-
-  // Edit dialog
-  const [editUser, setEditUser] = React.useState<User | null>(null);
-  const [editEmail, setEditEmail] = React.useState('');
-  const [editUsername, setEditUsername] = React.useState('');
-  const [editSuccess, setEditSuccess] = React.useState(false);
 
   // Delete dialog
   const [deleteUser, setDeleteUser] = React.useState<User | null>(null);
@@ -72,53 +57,161 @@ export default function Usuarios() {
   const [resetUser, setResetUser] = React.useState<User | null>(null);
   const [resetPassword, setResetPassword] = React.useState('');
   const [resetPasswordConfirm, setResetPasswordConfirm] = React.useState('');
+  const [resetError, setResetError] = React.useState('');
   const [resetSuccess, setResetSuccess] = React.useState(false);
 
-  const filteredUsers = MOCK_USERS.filter(
+  const [users, setUsers] = React.useState<User[]>([]);
+
+  const fetchUsers = React.useCallback(async () => {
+    try {
+      const res = await api('/users', { method: 'GET' });
+      if (!res.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      const data = (await res.json()) as { users: User[] };
+      setUsers(data.users);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const filteredUsers = users.filter(
     u =>
       u.username.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleOpenEdit = (user: User) => {
-    setEditUser(user);
-    setEditEmail(user.email);
-    setEditUsername(user.username);
-  };
+  const handleCreateSave = async () => {
+    setCreateError('');
 
-  const handleEditSave = () => {
-    console.log('User updated:', {
-      id: editUser?.id,
-      email: editEmail,
-      username: editUsername,
-    });
-    setEditUser(null);
-    setEditSuccess(true);
-  };
+    const trimmedEmail = newEmail.trim();
+    const trimmedUsername = newUsername.trim();
 
-  const handleCreateSave = () => {
-    console.log('User created:', {
-      email: newEmail,
-      username: newUsername,
-      password: newPassword,
-      isAdmin: newIsAdmin,
-    });
-    setCreateOpen(false);
-    setNewEmail('');
-    setNewUsername('');
-    setNewPassword('');
-    setNewIsAdmin(false);
-    setCreateSuccess(true);
+    if (!trimmedEmail || !trimmedUsername || !newPassword) {
+      setCreateError('Preencha nome, email e senha.');
+      return;
+    }
+
+    const isEmailValid = /^\S+@\S+\.\S+$/.test(trimmedEmail);
+    if (!isEmailValid) {
+      setCreateError('Email incompleto ou invalido.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setCreateError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    try {
+      const res = await api('/users', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: trimmedEmail,
+          username: trimmedUsername,
+          password: newPassword,
+          isAdmin: newIsAdmin,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          message?: string;
+          errors?: Array<{ message?: string }>;
+        } | null;
+        const firstError = data?.errors?.[0]?.message;
+        setCreateError(
+          firstError ?? data?.message ?? 'Falha ao criar usuario.',
+        );
+        return;
+      }
+
+      const data = (await res.json().catch(() => null)) as {
+        user?: User;
+      } | null;
+      if (data?.user) {
+        setUsers(prevUsers => [data.user!, ...prevUsers]);
+      } else {
+        await fetchUsers();
+      }
+
+      console.log('User created:', {
+        email: newEmail,
+        username: newUsername,
+        password: newPassword,
+        isAdmin: newIsAdmin,
+      });
+
+      setCreateOpen(false);
+      setNewEmail('');
+      setNewUsername('');
+      setNewPassword('');
+      setNewIsAdmin(false);
+      setCreateError('');
+      setPage(0);
+      setCreateSuccess(true);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      setCreateError('Erro ao conectar com o servidor.');
+    }
   };
 
   const handleDeleteConfirm = () => {
     console.log('User deleted:', deleteUser);
+    if (!deleteUser) {
+      return;
+    }
+
+    api(`/users/${deleteUser.id}`, { method: 'DELETE' })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Failed to delete user');
+        }
+        setUsers(users.filter(u => u.id !== deleteUser.id));
+      })
+      .catch(error => {
+        console.error('Error deleting user:', error);
+      });
     setDeleteUser(null);
     setDeleteSuccess(true);
   };
 
-  const handleResetSave = () => {
+  const handleResetPassword = async () => {
+    setResetError('');
+
     console.log('Password reset for:', resetUser?.id, 'new:', resetPassword);
+    const userId = resetUser?.id;
+
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const res = await api(`/change-password/admin/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          newPassword: resetPassword,
+          confirmPassword: resetPasswordConfirm,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setResetError(data?.message ?? 'Falha ao resetar a senha');
+        return;
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      setResetError('Erro ao conectar com o servidor');
+      return;
+    }
     setResetUser(null);
     setResetPassword('');
     setResetPasswordConfirm('');
@@ -165,7 +258,10 @@ export default function Usuarios() {
               color="primary"
               sx={{ flex: 1, borderRadius: 2, textTransform: 'none' }}
               startIcon={<PersonAdd />}
-              onClick={() => setCreateOpen(true)}
+              onClick={() => {
+                setCreateError('');
+                setCreateOpen(true);
+              }}
             >
               Novo Usuário
             </Button>
@@ -178,7 +274,6 @@ export default function Usuarios() {
                   <TableCell>Nome</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell align="center">Tipo</TableCell>
-                  <TableCell />
                   <TableCell />
                   <TableCell />
                 </TableRow>
@@ -202,21 +297,11 @@ export default function Usuarios() {
                       <TableCell align="right">
                         <Button
                           variant="outlined"
-                          color="primary"
-                          size="small"
-                          onClick={() => handleOpenEdit(user)}
-                        >
-                          Editar
-                        </Button>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          variant="outlined"
                           color="warning"
                           size="small"
                           onClick={() => setResetUser(user)}
                         >
-                          Resetar Senha
+                          Alterar Senha
                         </Button>
                       </TableCell>
                       <TableCell align="right">
@@ -249,7 +334,10 @@ export default function Usuarios() {
       {/* Create user dialog */}
       <Dialog
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setCreateError('');
+        }}
         fullWidth
         maxWidth="sm"
       >
@@ -257,6 +345,9 @@ export default function Usuarios() {
         <DialogContent
           sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
         >
+          {createError && (
+            <Chip label={createError} color="error" variant="outlined" />
+          )}
           <TextField
             label="Nome de Usuário"
             fullWidth
@@ -289,7 +380,13 @@ export default function Usuarios() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateOpen(false)} color="inherit">
+          <Button
+            onClick={() => {
+              setCreateOpen(false);
+              setCreateError('');
+            }}
+            color="inherit"
+          >
             Cancelar
           </Button>
           <Button
@@ -302,46 +399,13 @@ export default function Usuarios() {
         </DialogActions>
       </Dialog>
 
-      {/* Edit user dialog */}
-      <Dialog
-        open={Boolean(editUser)}
-        onClose={() => setEditUser(null)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Editar Usuário</DialogTitle>
-        <DialogContent
-          sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
-        >
-          <TextField
-            label="Nome de Usuário"
-            fullWidth
-            value={editUsername}
-            onChange={e => setEditUsername(e.target.value)}
-            sx={{ mt: 1 }}
-          />
-          <TextField
-            label="Email"
-            type="email"
-            fullWidth
-            value={editEmail}
-            onChange={e => setEditEmail(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditUser(null)} color="inherit">
-            Cancelar
-          </Button>
-          <Button onClick={handleEditSave} variant="contained" color="primary">
-            Salvar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       {/* Admin reset password dialog */}
       <Dialog
         open={Boolean(resetUser)}
-        onClose={() => setResetUser(null)}
+        onClose={() => {
+          setResetUser(null);
+          setResetError('');
+        }}
         fullWidth
         maxWidth="sm"
       >
@@ -349,6 +413,9 @@ export default function Usuarios() {
         <DialogContent
           sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
         >
+          {resetError && (
+            <Chip label={resetError} color="error" variant="outlined" />
+          )}
           <TextField
             label="Nova Senha"
             type="password"
@@ -376,16 +443,22 @@ export default function Usuarios() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setResetUser(null)} color="inherit">
+          <Button
+            onClick={() => {
+              setResetUser(null);
+              setResetError('');
+            }}
+            color="inherit"
+          >
             Cancelar
           </Button>
           <Button
-            onClick={handleResetSave}
+            onClick={handleResetPassword}
             variant="contained"
             color="warning"
             disabled={!resetPassword || resetPassword !== resetPasswordConfirm}
           >
-            Resetar
+            Confirmar
           </Button>
         </DialogActions>
       </Dialog>
@@ -405,11 +478,6 @@ export default function Usuarios() {
         open={createSuccess}
         onClose={() => setCreateSuccess(false)}
         message="Usuário criado com sucesso!"
-      />
-      <SuccessSnackbar
-        open={editSuccess}
-        onClose={() => setEditSuccess(false)}
-        message="Usuário atualizado com sucesso!"
       />
       <SuccessSnackbar
         open={deleteSuccess}

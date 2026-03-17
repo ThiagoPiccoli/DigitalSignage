@@ -36,6 +36,21 @@ export function storeSession({ token, ...user }: SessionPayload) {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
+export function updateSessionUser(userPatch: Partial<SessionUser>) {
+  const currentUser = getSessionUser();
+
+  if (!currentUser) {
+    return;
+  }
+
+  const nextUser: SessionUser = {
+    ...currentUser,
+    ...userPatch,
+  };
+
+  localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+}
+
 export function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);

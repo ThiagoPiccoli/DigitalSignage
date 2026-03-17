@@ -9,12 +9,13 @@ const HtmlController = () => import('#controllers/html_controller')
 const ManifestController = () => import('#controllers/manifest_controller')
 
 //User routes
-router.put('/users/:id', [UsersController, 'update']).use(middleware.auth()) // Testado
-router.get('/users/:id', [UsersController, 'show']).use([middleware.auth()]) // Testado
+router.put('/users/:id', [UsersController, 'update']).use(middleware.auth()) // Testado //front
+router.get('/users/:id', [UsersController, 'show']).use([middleware.auth()]) // Testado //front
+router.post('/change-password/:id', [PasswordsController, 'changePassword']).use(middleware.auth()) // Testado //front
 
 //Admin User routes
 router.post('/users', [UsersController, 'store']).use([middleware.auth(), middleware.admin()]) // Testado
-router.get('/users', [UsersController, 'index']).use([middleware.auth(), middleware.admin()]) // Testado
+router.get('/users', [UsersController, 'index']).use([middleware.auth(), middleware.admin()]) // Testado //front
 router
   .delete('/users/:id', [UsersController, 'destroy'])
   .use([middleware.auth(), middleware.admin()]) // Testado
@@ -26,9 +27,6 @@ router
 router.post('/sessions', [SessionController, 'store']) // Testado
 router.get('/sessions/me', [SessionController, 'me']).use(middleware.auth()) //Testado
 router.delete('/sessions', [SessionController, 'destroy']).use(middleware.auth()) // Testado
-
-//Password routes
-router.post('/change-password/:id', [PasswordsController, 'changePassword']).use(middleware.auth()) // Testado
 
 //Admin routes
 router

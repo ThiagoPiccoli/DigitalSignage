@@ -14,7 +14,11 @@ export async function api(path: string, options: RequestInit = {}) {
     },
   });
 
-  if (res.status === 401) {
+  const isLoginRequest =
+    path.startsWith('/sessions') &&
+    (options.method?.toUpperCase() ?? 'GET') === 'POST';
+
+  if (res.status === 401 && !isLoginRequest) {
     clearSession();
     window.location.href = '/login';
     throw new Error('Sessão expirada');
