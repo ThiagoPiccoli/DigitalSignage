@@ -7,6 +7,7 @@ const SessionController = () => import('#controllers/session_controller')
 const PlayerController = () => import('#controllers/player_controller')
 const HtmlController = () => import('#controllers/html_controller')
 const ManifestController = () => import('#controllers/manifest_controller')
+const MediaController = () => import('../app/controllers/media_controller.js')
 
 //User routes
 router.put('/users/:id', [UsersController, 'update']).use(middleware.auth()) // Testado //front
@@ -39,6 +40,9 @@ router
 //Manifest routes
 router.post('/defaults', [ManifestController, 'setDefaults']).use(middleware.auth()) //Testado
 router.get('/manifest', [ManifestController, 'show']) //Testado
+
+//Public media files route
+router.get('/media/:filename', [MediaController, 'show'])
 
 //Player routes
 router.post('/player', [PlayerController, 'upload']).use(middleware.auth()) // Testado

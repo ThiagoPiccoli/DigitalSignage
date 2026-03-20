@@ -12,21 +12,10 @@ import {
   Select,
   Slider,
   Switch,
-  TextField,
 } from '@mui/material';
 import React from 'react';
 
 import SuccessSnackbar from '../components/SuccessSnackbar';
-
-const DAYS_OPTIONS = [
-  { label: 'Seg', value: 'mon' },
-  { label: 'Ter', value: 'tue' },
-  { label: 'Qua', value: 'wed' },
-  { label: 'Qui', value: 'thu' },
-  { label: 'Sex', value: 'fri' },
-  { label: 'Sáb', value: 'sat' },
-  { label: 'Dom', value: 'sun' },
-] as const;
 
 export default function Configuracoes() {
   const [saveSuccess, setSaveSuccess] = React.useState(false);
@@ -36,26 +25,9 @@ export default function Configuracoes() {
   const [bgColor, setBgColor] = React.useState('#000000');
   const [mute, setMute] = React.useState(true);
   const [volume, setVolume] = React.useState(1.0);
-  const [scheduleDays, setScheduleDays] = React.useState<string[]>([
-    'mon',
-    'tue',
-    'wed',
-    'thu',
-    'fri',
-    'sat',
-    'sun',
-  ]);
-  const [scheduleStart, setScheduleStart] = React.useState('00:00');
-  const [scheduleEnd, setScheduleEnd] = React.useState('23:59');
 
   // Server info
   const [serverIps] = React.useState<string[]>([]);
-
-  const toggleDay = (day: string) => {
-    setScheduleDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day],
-    );
-  };
 
   const handleSave = () => {
     console.log('Settings saved:', {
@@ -63,12 +35,6 @@ export default function Configuracoes() {
       bgColor,
       mute,
       volume,
-      schedule: {
-        days: scheduleDays,
-        start: scheduleStart,
-        end: scheduleEnd,
-        tz: 'America/Sao_Paulo',
-      },
     });
     setSaveSuccess(true);
   };
@@ -167,88 +133,6 @@ export default function Configuracoes() {
               />
             </Box>
           </Box>
-        </Paper>
-
-        {/* Schedule */}
-        <Paper
-          elevation={10}
-          sx={{
-            p: 4,
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            mb: 3,
-          }}
-        >
-          <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
-            Horário de Exibição
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {DAYS_OPTIONS.map(({ label, value }) => (
-                <Button
-                  key={value}
-                  variant={
-                    scheduleDays.includes(value) ? 'contained' : 'outlined'
-                  }
-                  size="small"
-                  sx={{ textTransform: 'none', minWidth: 48 }}
-                  onClick={() => toggleDay(value)}
-                >
-                  {label}
-                </Button>
-              ))}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Início"
-                type="time"
-                fullWidth
-                value={scheduleStart}
-                onChange={e => setScheduleStart(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-              <TextField
-                label="Fim"
-                type="time"
-                fullWidth
-                value={scheduleEnd}
-                onChange={e => setScheduleEnd(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-            </Box>
-          </Box>
-        </Paper>
-
-        {/* Server info */}
-        <Paper
-          elevation={10}
-          sx={{
-            p: 4,
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            mb: 3,
-          }}
-        >
-          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-            Servidor
-          </Typography>
-          {serverIps.length > 0 ? (
-            serverIps.map(ip => (
-              <Typography
-                key={ip}
-                variant="body1"
-                sx={{ fontFamily: 'monospace' }}
-              >
-                {ip}
-              </Typography>
-            ))
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Nenhum IP local disponível
-            </Typography>
-          )}
         </Paper>
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 4 }}>

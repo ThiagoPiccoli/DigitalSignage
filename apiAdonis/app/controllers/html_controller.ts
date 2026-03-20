@@ -4,8 +4,36 @@ import MediaService from '../services/media_service.js'
 
 const DEFAULT_HTML_PADDING = 24
 const DEFAULT_HTML_MAX_WIDTH = 1200
+const DEFAULT_SCHEDULE = {
+  days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+  start: '00:00',
+  end: '23:59',
+  tz: 'America/Sao_Paulo',
+}
 
 export default class HtmlController {
+  private normalizeSchedule(value: any) {
+    if (!value) {
+      return DEFAULT_SCHEDULE
+    }
+
+    let parsed = value
+    if (typeof value === 'string') {
+      try {
+        parsed = JSON.parse(value)
+      } catch {
+        return DEFAULT_SCHEDULE
+      }
+    }
+
+    return {
+      days: Array.isArray(parsed?.days) ? parsed.days : DEFAULT_SCHEDULE.days,
+      start: parsed?.start || DEFAULT_SCHEDULE.start,
+      end: parsed?.end || DEFAULT_SCHEDULE.end,
+      tz: parsed?.tz || DEFAULT_SCHEDULE.tz,
+    }
+  }
+
   /**
    * Generate HTML document content
    */
@@ -91,6 +119,7 @@ export default class HtmlController {
       textAlign,
       paddingPx = DEFAULT_HTML_PADDING,
       maxWidthPx = DEFAULT_HTML_MAX_WIDTH,
+      schedule,
     } = request.only([
       'filename',
       'title',
@@ -102,6 +131,7 @@ export default class HtmlController {
       'textAlign',
       'paddingPx',
       'maxWidthPx',
+      'schedule',
     ])
 
     const baseName = MediaService.sanitizeFilename(filename || '') || `aviso-${Date.now()}.html`
@@ -125,7 +155,7 @@ export default class HtmlController {
     const fileUrl = MediaService.getFileUrl(baseName)
 
     const htmlPlayer = await HtmlPlayer.create({
-      fileType: 'html',
+      fileType: 'aviso',
       title: title || 'Aviso',
       htmlUrl: fileUrl,
       bodyHtml: bodyHtml || '',
@@ -138,6 +168,7 @@ export default class HtmlController {
       textAlign: textAlign || 'center',
       paddingPx: paddingPx,
       maxWidthPx: maxWidthPx,
+      schedule: this.normalizeSchedule(schedule),
       lastModified: auth.user?.id || 0,
     })
 
@@ -160,6 +191,7 @@ export default class HtmlController {
       textColor = '#ffffff',
       accentColor = '#22c55e',
       fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
+      schedule,
     } = request.only([
       'title',
       'deadlineISO',
@@ -168,6 +200,7 @@ export default class HtmlController {
       'textColor',
       'accentColor',
       'fontFamily',
+      'schedule',
     ])
 
     if (!title || !deadlineISO) {
@@ -245,7 +278,7 @@ export default class HtmlController {
 
     // Create HtmlPlayer record
     const htmlPlayer = await HtmlPlayer.create({
-      fileType: 'html',
+      fileType: 'contador',
       title: title,
       htmlUrl: fileUrl,
       bodyHtml: `Countdown to ${deadlineISO}`,
@@ -256,6 +289,7 @@ export default class HtmlController {
       textAlign: 'center',
       paddingPx: 24,
       maxWidthPx: 1200,
+      schedule: this.normalizeSchedule(schedule),
       lastModified: auth.user?.id || 0,
     })
 
@@ -266,7 +300,7 @@ export default class HtmlController {
     })
   }
 
-  public async duplicateHtml({ request, response, auth, params }: HttpContext) {
+  public async duplicateHtml({ response, auth, params }: HttpContext) {
     const id = params.id
 
     if (!id) {
@@ -315,6 +349,7 @@ export default class HtmlController {
       textAlign: originalPlayer.textAlign,
       paddingPx: originalPlayer.paddingPx,
       maxWidthPx: originalPlayer.maxWidthPx,
+      schedule: originalPlayer.schedule,
       lastModified: auth.user?.id || 0,
     })
     return response.created({
@@ -337,7 +372,12 @@ export default class HtmlController {
       'textAlign',
       'paddingPx',
       'maxWidthPx',
+      'schedule',
     ])
+
+    if (updateData.schedule) {
+      updateData.schedule = this.normalizeSchedule(updateData.schedule)
+    }
 
     htmlPlayer.merge({
       ...updateData,
@@ -384,7 +424,7 @@ export default class HtmlController {
   }
 
   public async index({ response }: HttpContext) {
-    const players = await HtmlPlayer.all()
+    const players = await HtmlPlayer.query().preload('lastModifiedUser')
     return response.ok(players)
   }
 

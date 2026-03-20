@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -7,8 +8,12 @@ import {
   TextField,
 } from '@mui/material';
 import React from 'react';
+import ScheduleFields, {
+  DEFAULT_SCHEDULE,
+  type Schedule,
+} from './ScheduleFields';
 
-export type AvisoRow = { nome: string; aviso: string };
+export type AvisoRow = { nome: string; aviso: string; schedule: Schedule };
 
 interface AvisoDialogProps {
   row: AvisoRow | null;
@@ -24,7 +29,9 @@ export default function AvisoDialog({
   const [values, setValues] = React.useState<AvisoRow | null>(null);
 
   React.useEffect(() => {
-    setValues(row ? { ...row } : null);
+    setValues(
+      row ? { ...row, schedule: row.schedule ?? DEFAULT_SCHEDULE } : null,
+    );
   }, [row]);
 
   const handleChange =
@@ -53,6 +60,18 @@ export default function AvisoDialog({
           value={values?.aviso ?? ''}
           onChange={handleChange('aviso')}
         />
+        {values && (
+          <Box sx={{ mt: 1 }}>
+            <ScheduleFields
+              value={values.schedule}
+              onChange={schedule =>
+                setValues(current =>
+                  current ? { ...current, schedule } : current,
+                )
+              }
+            />
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">

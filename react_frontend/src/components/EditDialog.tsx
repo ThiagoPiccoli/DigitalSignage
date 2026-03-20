@@ -10,6 +10,10 @@ import {
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import React from 'react';
+import ScheduleFields, {
+  DEFAULT_SCHEDULE,
+  type Schedule,
+} from './ScheduleFields';
 
 export type Row = {
   nome: string;
@@ -18,6 +22,9 @@ export type Row = {
   criador: string;
   aviso?: string;
   deadlineISO?: string;
+  mediaUrl?: string;
+  durationMs?: number;
+  schedule?: Schedule;
 };
 
 export type EditPayload = {
@@ -26,6 +33,7 @@ export type EditPayload = {
   aviso?: string;
   deadlineISO?: string;
   file?: File | null;
+  schedule: Schedule;
 };
 
 interface EditDialogProps {
@@ -36,7 +44,8 @@ interface EditDialogProps {
 
 const ACCEPT_MAP: Record<string, string> = {
   Vídeo: 'video/mp4,video/webm,video/ogg',
-  Imagem: 'image/png,image/jpeg,image/gif,image/webp,image/bmp,image/svg+xml',
+  Imagem:
+    'image/png,image/jpeg,image/jpg,image/gif,image/webp,image/bmp,image/svg+xml,.jpg,.jpeg',
 };
 
 export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
@@ -44,6 +53,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
   const [aviso, setAviso] = React.useState('');
   const [deadlineISO, setDeadlineISO] = React.useState('');
   const [file, setFile] = React.useState<File | null>(null);
+  const [schedule, setSchedule] = React.useState<Schedule>(DEFAULT_SCHEDULE);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -51,6 +61,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
       setNome(row.nome);
       setAviso(row.aviso ?? '');
       setDeadlineISO(row.deadlineISO ?? '');
+      setSchedule(row.schedule ?? DEFAULT_SCHEDULE);
       setFile(null);
     }
   }, [row]);
@@ -63,9 +74,11 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
 
   const handleSave = () => {
     if (!row) return;
-    const payload: EditPayload = { nome, tipo: row.tipo };
+    const payload: EditPayload = { nome, tipo: row.tipo, schedule };
     if (row.tipo === 'Aviso') payload.aviso = aviso;
-    if (row.tipo === 'Contador') payload.deadlineISO = deadlineISO;
+    if (row.tipo === 'Contador') {
+      payload.deadlineISO = deadlineISO;
+    }
     if (isMedia) payload.file = file;
     onSave(payload);
   };
@@ -108,6 +121,42 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
 
         {isMedia && (
           <>
+            {row?.mediaUrl && row.tipo === 'Imagem' && (
+              <Box
+                component="img"
+                src={row.mediaUrl}
+                alt={row.nome}
+                sx={{
+                  width: '100%',
+                  maxHeight: 180,
+                  objectFit: 'contain',
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  p: 1,
+                }}
+              />
+            )}
+            {row?.mediaUrl && row.tipo === 'Vídeo' && (
+              <Box
+                component="video"
+                src={row.mediaUrl}
+                controls
+                muted
+                sx={{
+                  width: '100%',
+                  maxHeight: 220,
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              />
+            )}
+            {row?.mediaUrl && (
+              <Typography variant="caption" color="text.secondary">
+                Arquivo atual: {row.mediaUrl.split('/').pop()}
+              </Typography>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -153,6 +202,8 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
             </Box>
           </>
         )}
+
+        <ScheduleFields value={schedule} onChange={setSchedule} />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">
@@ -162,7 +213,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
           onClick={handleSave}
           variant="contained"
           color="primary"
-          disabled={!nome}
+          disabled={!row}
         >
           Salvar
         </Button>

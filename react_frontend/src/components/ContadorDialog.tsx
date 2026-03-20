@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -7,8 +8,16 @@ import {
   TextField,
 } from '@mui/material';
 import React from 'react';
+import ScheduleFields, {
+  DEFAULT_SCHEDULE,
+  type Schedule,
+} from './ScheduleFields';
 
-export type ContadorRow = { nome: string; deadlineISO: string };
+export type ContadorRow = {
+  nome: string;
+  deadlineISO: string;
+  schedule: Schedule;
+};
 
 interface ContadorDialogProps {
   row: ContadorRow | null;
@@ -24,7 +33,9 @@ export default function ContadorDialog({
   const [values, setValues] = React.useState<ContadorRow | null>(null);
 
   React.useEffect(() => {
-    setValues(row ? { ...row } : null);
+    setValues(
+      row ? { ...row, schedule: row.schedule ?? DEFAULT_SCHEDULE } : null,
+    );
   }, [row]);
 
   const handleChange =
@@ -53,6 +64,18 @@ export default function ContadorDialog({
           onChange={handleChange('deadlineISO')}
           slotProps={{ inputLabel: { shrink: true } }}
         />
+        {values && (
+          <Box sx={{ mt: 1 }}>
+            <ScheduleFields
+              value={values.schedule}
+              onChange={schedule =>
+                setValues(current =>
+                  current ? { ...current, schedule } : current,
+                )
+              }
+            />
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">

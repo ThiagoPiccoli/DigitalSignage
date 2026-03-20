@@ -10,11 +10,16 @@ import {
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import React from 'react';
+import ScheduleFields, {
+  DEFAULT_SCHEDULE,
+  type Schedule,
+} from './ScheduleFields';
 
 export type MediaUploadData = {
   file: File | null;
   title: string;
   durationMs: number;
+  schedule: Schedule;
 };
 
 interface MediaUploadDialogProps {
@@ -25,8 +30,16 @@ interface MediaUploadDialogProps {
 }
 
 const ACCEPT_MAP = {
-  video: 'video/mp4,video/webm,video/ogg',
-  image: 'image/png,image/jpeg,image/gif,image/webp,image/bmp,image/svg+xml',
+  video: 'video/mp4,video/webm,video/ogg,video/quicktime,.mov',
+  image:
+    'image/png,image/jpeg,image/jpg,image/gif,image/webp,image/bmp,image/svg+xml,.jpg,.jpeg',
+};
+
+const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024;
+
+const ALLOWED_EXTENSIONS: Record<'video' | 'image', string[]> = {
+  video: ['mp4', 'webm', 'ogg', 'mov'],
+  image: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'],
 };
 
 const LABEL_MAP = {
@@ -43,6 +56,8 @@ export default function MediaUploadDialog({
   const [file, setFile] = React.useState<File | null>(null);
   const [title, setTitle] = React.useState('');
   const [durationMs, setDurationMs] = React.useState(10000);
+  const [schedule, setSchedule] = React.useState<Schedule>(DEFAULT_SCHEDULE);
+  const [fileError, setFileError] = React.useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -50,11 +65,40 @@ export default function MediaUploadDialog({
       setFile(null);
       setTitle('');
       setDurationMs(type === 'video' ? 0 : 10000);
+      setSchedule(DEFAULT_SCHEDULE);
+      setFileError('');
     }
   }, [open, type]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0] ?? null;
+
+    if (!selected) {
+      setFile(null);
+      setFileError('');
+      return;
+    }
+
+    const ext = selected.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!ALLOWED_EXTENSIONS[type].includes(ext)) {
+      setFile(null);
+      setFileError(
+        type === 'video'
+          ? 'Formato invalido. Envie MP4, WebM, OGG ou MOV.'
+          : 'Formato invalido. Envie PNG, JPG, JPEG, GIF, WebP, BMP ou SVG.',
+      );
+      e.target.value = '';
+      return;
+    }
+
+    if (selected.size > MAX_FILE_SIZE_BYTES) {
+      setFile(null);
+      setFileError('Arquivo muito grande. O limite maximo e 500MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setFileError('');
     setFile(selected);
     if (selected && !title) {
       setTitle(selected.name.replace(/\.[^.]+$/, ''));
@@ -62,7 +106,7 @@ export default function MediaUploadDialog({
   };
 
   const handleSave = () => {
-    onSave({ file, title, durationMs });
+    onSave({ file, title, durationMs, schedule });
   };
 
   return (
@@ -103,7 +147,10 @@ export default function MediaUploadDialog({
           }}
         >
           <CloudUpload
-            sx={{ fontSize: 48, color: file ? 'primary.main' : 'text.secondary' }}
+            sx={{
+              fontSize: 48,
+              color: file ? 'primary.main' : 'text.secondary',
+            }}
           />
           {file ? (
             <Typography variant="body1" fontWeight="bold" color="primary">
@@ -116,8 +163,8 @@ export default function MediaUploadDialog({
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {type === 'video'
-                  ? 'MP4, WebM, OGG (máx. 500MB)'
-                  : 'PNG, JPG, GIF, WebP, BMP, SVG (máx. 500MB)'}
+                  ? 'MP4, WebM, OGG, MOV (máx. 500MB)'
+                  : 'PNG, JPG, JPEG, GIF, WebP, BMP, SVG (máx. 500MB)'}
               </Typography>
             </>
           )}
@@ -140,6 +187,14 @@ export default function MediaUploadDialog({
             helperText="Tempo que a imagem ficará na tela (padrão: 10000ms = 10s)"
           />
         )}
+
+        <ScheduleFields value={schedule} onChange={setSchedule} />
+
+        {fileError && (
+          <Typography variant="body2" color="error">
+            {fileError}
+          </Typography>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">
@@ -149,7 +204,7 @@ export default function MediaUploadDialog({
           onClick={handleSave}
           variant="contained"
           color="primary"
-          disabled={!file}
+          disabled={!file || Boolean(fileError)}
         >
           Enviar
         </Button>

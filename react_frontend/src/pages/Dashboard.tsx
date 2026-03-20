@@ -14,12 +14,15 @@ import {
   TextField,
 } from '@mui/material';
 import { FileUpload, SearchRounded } from '@mui/icons-material';
-import React from 'react';
+import React, { useEffect } from 'react';
 import TablePagination from '@mui/material/TablePagination';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
-import EditDialog, { type Row, type EditPayload } from '../components/EditDialog';
+import EditDialog, {
+  type Row,
+  type EditPayload,
+} from '../components/EditDialog';
 import DeleteDialog from '../components/DeleteDialog';
 import SuccessSnackbar from '../components/SuccessSnackbar';
 import PopperMenu from '../components/PopperMenu';
@@ -28,30 +31,15 @@ import ContadorDialog, { type ContadorRow } from '../components/ContadorDialog';
 import MediaUploadDialog, {
   type MediaUploadData,
 } from '../components/MediaUploadDialog';
+import { DEFAULT_SCHEDULE, type Schedule } from '../components/ScheduleFields';
 import { api } from '../api';
-
-const MOCK_ROWS: Row[] = [
-  {
-    nome: 'Comunicado Importante',
-    tipo: 'Aviso',
-    data: '2026-03-06',
-    criador: 'Thiago',
-  },
-  {
-    nome: 'Prazo do Projeto',
-    tipo: 'Contador',
-    data: '2026-03-06',
-    criador: 'Thiago',
-  },
-  { nome: 'Donut', tipo: 'Vídeo', data: '2026-03-05', criador: 'João' },
-  { nome: 'Éclair', tipo: 'Imagem', data: '2026-03-04', criador: 'Maria' },
-];
+import { getAuthToken } from '../auth';
 
 const FILTER_OPTIONS = [
   { label: 'Todos os Avisos', value: 'todos' },
   { label: 'Avisos', value: 'aviso' },
   { label: 'Contadores', value: 'contador' },
-  { label: 'Vídeos', value: 'vídeo' },
+  { label: 'Vídeos', value: 'video' },
   { label: 'Imagens', value: 'imagem' },
 ] as const;
 
@@ -76,14 +64,69 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
     }
   }, [adminMode]);
 
-  const [editRow, setEditRow] = React.useState<Row | null>(null);
-  const [deleteRow, setDeleteRow] = React.useState<Row | null>(null);
+  type ApiHtmlSignage = {
+    id: number;
+    title: string;
+    fileType: 'aviso' | 'contador';
+    bodyHtml: string;
+    htmlUrl: string;
+    schedule?: Schedule;
+    createdAt: string;
+    lastModified: number;
+    lastModifiedUser?: {
+      username: string;
+    };
+  };
+
+  type ApiMediaSignage = {
+    id: number;
+    title: string;
+    fileType: 'video' | 'image';
+    fileUrl: string;
+    durationMs: number;
+    schedule?: Schedule;
+    createdAt: string;
+    lastModified: number;
+    lastModifiedUser?: {
+      username: string;
+    };
+  };
+
+  type DashboardRow = Row & {
+    id: number;
+    source: 'html' | 'player';
+    fileType: 'aviso' | 'contador' | 'video' | 'image';
+  };
+
+  const extractDeadlineISO = (bodyHtml: string) => {
+    const match = bodyHtml.match(/Countdown to\s+(.+)/i);
+    return match?.[1]?.trim() ?? '';
+  };
+
+  const normalizeSchedule = (schedule?: Schedule): Schedule => {
+    if (!schedule) {
+      return DEFAULT_SCHEDULE;
+    }
+
+    return {
+      days: Array.isArray(schedule.days)
+        ? schedule.days
+        : DEFAULT_SCHEDULE.days,
+      start: schedule.start || DEFAULT_SCHEDULE.start,
+      end: schedule.end || DEFAULT_SCHEDULE.end,
+      tz: schedule.tz || DEFAULT_SCHEDULE.tz,
+    };
+  };
+
+  const [editRow, setEditRow] = React.useState<DashboardRow | null>(null);
+  const [deleteRow, setDeleteRow] = React.useState<DashboardRow | null>(null);
   const [editSuccess, setEditSuccess] = React.useState(false);
   const [deleteSuccess, setDeleteSuccess] = React.useState(false);
   const [filter, setFilter] = React.useState<string>('todos');
   const [fileTypeAnchor, setFileTypeAnchor] =
     React.useState<null | HTMLElement>(null);
   const [search, setSearch] = React.useState('');
+  const [signages, setSignages] = React.useState<DashboardRow[]>([]);
 
   // Aviso dialog state
   const [aviso, setAviso] = React.useState<AvisoRow | null>(null);
@@ -99,43 +142,299 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   );
   const [uploadSuccess, setUploadSuccess] = React.useState(false);
 
-  const filteredRows = MOCK_ROWS.filter(
-    r => filter === 'todos' || r.tipo.toLowerCase() === filter,
-  ).filter(r => r.nome.toLowerCase().includes(search.toLowerCase()));
+  const mapTypeToLabel = (
+    type: 'aviso' | 'contador' | 'video' | 'image',
+  ): Row['tipo'] => {
+    if (type === 'aviso') return 'Aviso';
+    if (type === 'contador') return 'Contador';
+    if (type === 'video') return 'Vídeo';
+    return 'Imagem';
+  };
+
+  const formatDate = (iso: string) => {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) {
+      return '-';
+    }
+
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(date);
+  };
+
+  const formatSchedule = (schedule?: Schedule) => {
+    if (!schedule) {
+      return 'Sempre';
+    }
+
+    const dayLabelMap: Record<string, string> = {
+      mon: 'Seg',
+      tue: 'Ter',
+      wed: 'Qua',
+      thu: 'Qui',
+      fri: 'Sex',
+      sat: 'Sab',
+      sun: 'Dom',
+    };
+
+    const hasAllDays =
+      schedule.days.length === 7 &&
+      ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].every(day =>
+        schedule.days.includes(day),
+      );
+
+    const daysLabel = hasAllDays
+      ? 'Todos os dias'
+      : schedule.days.map(day => dayLabelMap[day] ?? day).join(', ');
+
+    return `${daysLabel} | ${schedule.start} - ${schedule.end}`;
+  };
+
+  const fetchSignage = React.useCallback(async () => {
+    try {
+      const [htmlRes, mediaRes] = await Promise.all([
+        api('/html', { method: 'GET' }),
+        api('/player', { method: 'GET' }),
+      ]);
+
+      if (!htmlRes.ok) {
+        throw new Error('Failed to fetch html entries');
+      }
+
+      if (!mediaRes.ok) {
+        throw new Error('Failed to fetch media entries');
+      }
+
+      const htmlData = (await htmlRes.json()) as ApiHtmlSignage[];
+      const mediaData = (await mediaRes.json()) as ApiMediaSignage[];
+
+      const htmlRows: DashboardRow[] = htmlData.map(item => ({
+        id: item.id,
+        source: 'html',
+        fileType: item.fileType,
+        nome: item.title,
+        tipo: mapTypeToLabel(item.fileType),
+        data: formatDate(item.createdAt),
+        criador: item.lastModifiedUser?.username ?? 'Desconhecido',
+        aviso: item.fileType === 'aviso' ? item.bodyHtml : undefined,
+        deadlineISO:
+          item.fileType === 'contador'
+            ? extractDeadlineISO(item.bodyHtml)
+            : undefined,
+        mediaUrl: item.htmlUrl,
+        schedule: normalizeSchedule(item.schedule),
+      }));
+
+      const mediaRows: DashboardRow[] = mediaData.map(item => ({
+        id: item.id,
+        source: 'player',
+        fileType: item.fileType,
+        nome: item.title,
+        tipo: mapTypeToLabel(item.fileType),
+        data: formatDate(item.createdAt),
+        criador: item.lastModifiedUser?.username ?? 'Desconhecido',
+        mediaUrl: item.fileUrl,
+        durationMs: item.durationMs,
+        schedule: normalizeSchedule(item.schedule),
+      }));
+
+      setSignages([...htmlRows, ...mediaRows]);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSignage();
+  }, [fetchSignage]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [filter, search]);
+
+  const filteredRows = signages
+    .filter(r => {
+      if (filter === 'todos') {
+        return true;
+      }
+
+      const normalizedFilter = filter === 'imagem' ? 'image' : filter;
+      return r.fileType === normalizedFilter;
+    })
+    .filter(r => {
+      const normalizedSearch = search.toLowerCase();
+      return (
+        r.nome.toLowerCase().includes(normalizedSearch) ||
+        r.criador.toLowerCase().includes(normalizedSearch)
+      );
+    });
 
   const togglePopper =
     (setter: React.Dispatch<React.SetStateAction<HTMLElement | null>>) =>
     (e: React.MouseEvent<HTMLElement>) =>
       setter(prev => (prev ? null : e.currentTarget));
 
-  const handleEditSave = (values: EditPayload) => {
-    console.log('Saved:', values);
+  const handleEditSave = async (values: EditPayload) => {
+    if (!editRow) {
+      return;
+    }
+
+    try {
+      if (editRow.source === 'html') {
+        const payload: {
+          title: string;
+          bodyHtml?: string;
+          schedule: Schedule;
+        } = {
+          title: values.nome,
+          schedule: values.schedule,
+        };
+
+        if (values.tipo === 'Aviso' && values.aviso) {
+          payload.bodyHtml = values.aviso;
+        }
+
+        const res = await api(`/html/${editRow.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to update html content');
+        }
+      } else {
+        const res = await api(`/player/${editRow.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            title: values.nome,
+            schedule: values.schedule,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to update media content');
+        }
+      }
+
+      await fetchSignage();
+      setEditSuccess(true);
+    } catch (error) {
+      console.error('Error updating content:', error);
+    }
+
     setEditRow(null);
-    setEditSuccess(true);
   };
 
-  const handleDeleteConfirm = () => {
-    console.log('Deleted:', deleteRow);
+  const handleDeleteConfirm = async () => {
+    if (!deleteRow) {
+      return;
+    }
+
+    try {
+      const endpoint =
+        deleteRow.source === 'html'
+          ? `/html/${deleteRow.id}`
+          : `/player/${deleteRow.id}`;
+
+      const res = await api(endpoint, { method: 'DELETE' });
+      if (!res.ok) {
+        throw new Error('Failed to delete content');
+      }
+
+      setSignages(prev =>
+        prev.filter(
+          item =>
+            !(item.id === deleteRow.id && item.source === deleteRow.source),
+        ),
+      );
+      setDeleteSuccess(true);
+    } catch (error) {
+      console.error('Error deleting content:', error);
+    }
+
     setDeleteRow(null);
-    setDeleteSuccess(true);
   };
 
-  const handleAvisoSave = (values: AvisoRow) => {
-    console.log('Aviso Create:', values);
+  const handleAvisoSave = async (values: AvisoRow) => {
+    try {
+      const res = await api('/html', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: values.nome,
+          bodyHtml: values.aviso,
+          schedule: values.schedule,
+        }),
+      });
+      if (res.ok) {
+        await fetchSignage();
+        setAvisoSuccess(true);
+      } else {
+        console.error('Failed to create aviso');
+      }
+    } catch (error) {
+      console.error('Error creating aviso:', error);
+    }
+
     setAviso(null);
-    setAvisoSuccess(true);
   };
 
-  const handleContadorSave = (values: ContadorRow) => {
-    console.log('Contador Create:', values);
+  const handleContadorSave = async (values: ContadorRow) => {
+    try {
+      const res = await api('/html/deadline', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: values.nome,
+          deadlineISO: values.deadlineISO,
+          schedule: values.schedule,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to create contador');
+      }
+
+      await fetchSignage();
+      setContadorSuccess(true);
+    } catch (error) {
+      console.error('Error creating contador:', error);
+    }
+
     setContador(null);
-    setContadorSuccess(true);
   };
 
-  const handleUploadSave = (values: MediaUploadData) => {
-    console.log('Media Upload:', values);
+  const handleUploadSave = async (values: MediaUploadData) => {
+    if (!values.file || !uploadType) {
+      return;
+    }
+
+    try {
+      const form = new FormData();
+      form.append('file', values.file);
+      form.append('title', values.title);
+      if (uploadType === 'image') {
+        form.append('durationMs', String(values.durationMs));
+      }
+      form.append('schedule', JSON.stringify(values.schedule));
+
+      const token = getAuthToken();
+      const response = await api('/player', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: form,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload media');
+      }
+
+      await fetchSignage();
+      setUploadSuccess(true);
+    } catch (error) {
+      console.error('Error uploading media:', error);
+    }
+
     setUploadType(null);
-    setUploadSuccess(true);
   };
 
   return (
@@ -143,6 +442,44 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
       <TopBar />
 
       <Container maxWidth="lg" sx={{ mt: 6 }}>
+        <Paper
+          elevation={10}
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            mb: 3,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', md: 'center' },
+              gap: 2,
+              flexDirection: { xs: 'column', md: 'row' },
+            }}
+          >
+            <Box>
+              <Typography variant="h6" fontWeight="bold">
+                Conteúdos do Player
+              </Typography>
+              <Typography color="text.secondary">
+                Visualize os itens enviados para reprodução: vídeos, imagens,
+                avisos e contadores.
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              sx={{ textTransform: 'none' }}
+              onClick={() => navigate('/player')}
+            >
+              Abrir Tela do Player
+            </Button>
+          </Box>
+        </Paper>
+
         {adminMode && (
           <Paper
             elevation={10}
@@ -168,7 +505,8 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                   Painel Administrativo
                 </Typography>
                 <Typography color="text.secondary">
-                  Gerencie usuários e configurações globais do mural a partir daqui.
+                  Gerencie usuários e configurações globais do mural a partir
+                  daqui.
                 </Typography>
                 {serverIps.length > 0 && (
                   <Typography variant="body2" sx={{ mt: 1 }}>
@@ -258,13 +596,14 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
             </ButtonGroup>
 
             <TableContainer component={Paper} sx={{ mt: 2 }}>
-              <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <Table sx={{ minWidth: 800 }} aria-label="simple table">
                 <TableHead>
                   <TableRow>
                     <TableCell>Nome</TableCell>
                     <TableCell align="right">Tipo</TableCell>
                     <TableCell align="right">Data</TableCell>
                     <TableCell align="right">Criador</TableCell>
+                    <TableCell align="right">Exibição</TableCell>
                     <TableCell />
                     <TableCell />
                   </TableRow>
@@ -273,13 +612,16 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                   {filteredRows
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map(row => (
-                      <TableRow key={row.nome}>
+                      <TableRow key={`${row.source}-${row.id}`}>
                         <TableCell component="th" scope="row">
                           {row.nome}
                         </TableCell>
                         <TableCell align="right">{row.tipo}</TableCell>
                         <TableCell align="right">{row.data}</TableCell>
                         <TableCell align="right">{row.criador}</TableCell>
+                        <TableCell align="right">
+                          {formatSchedule(row.schedule)}
+                        </TableCell>
                         <TableCell align="right">
                           <Button
                             variant="outlined"
@@ -325,10 +667,19 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         placement="bottom-start"
         width={300}
         items={[
-          { label: 'Aviso', onClick: () => setAviso({ nome: '', aviso: '' }) },
+          {
+            label: 'Aviso',
+            onClick: () =>
+              setAviso({ nome: '', aviso: '', schedule: DEFAULT_SCHEDULE }),
+          },
           {
             label: 'Contador',
-            onClick: () => setContador({ nome: '', deadlineISO: '' }),
+            onClick: () =>
+              setContador({
+                nome: '',
+                deadlineISO: '',
+                schedule: DEFAULT_SCHEDULE,
+              }),
           },
           { label: 'Vídeo', onClick: () => setUploadType('video') },
           { label: 'Imagem', onClick: () => setUploadType('image') },

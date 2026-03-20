@@ -5,6 +5,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Perfil from './pages/Perfil';
 import Configuracoes from './pages/Configuracoes';
 import Usuarios from './pages/Usuarios';
+import Player from './pages/Player';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import { getHomePath, getSessionUser } from './auth';
@@ -57,6 +58,14 @@ function App() {
             <AdminRoute>
               <Usuarios />
             </AdminRoute>
+          }
+        />
+        <Route
+          path="/player"
+          element={
+            <ProtectedRoute>
+              <Player />
+            </ProtectedRoute>
           }
         />
         <Route path="*" element={<DashboardRedirect />} />

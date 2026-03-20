@@ -3,11 +3,9 @@ import Toolbar from '@mui/material/Toolbar';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import PopperMenu from './PopperMenu';
 import { clearSession, getHomePath, getSessionUser } from '../auth';
 
 interface TopBarProps {
@@ -16,77 +14,70 @@ interface TopBarProps {
 
 export default function TopBar({ username = 'Thiago Piccoli' }: TopBarProps) {
   const navigate = useNavigate();
-  const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
   const sessionUser = getSessionUser();
   const displayName = sessionUser?.username ?? username;
 
-  const toggleMenu = (e: React.MouseEvent<HTMLElement>) =>
-    setMenuAnchor(prev => (prev ? null : e.currentTarget));
-
   return (
-    <>
-      <AppBar position="sticky" sx={{ bgcolor: 'primary.main' }}>
-        <Toolbar sx={{ gap: 1 }}>
+    <AppBar position="sticky" sx={{ bgcolor: 'primary.main' }}>
+      <Toolbar sx={{ gap: 1 }}>
+        <Box
+          onClick={() => navigate(getHomePath(sessionUser))}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            cursor: 'pointer',
+            '&:hover': { opacity: 0.85 },
+          }}
+        >
+          <Avatar
+            alt="CdTec"
+            src="/logo_ufpel.png"
+            variant="square"
+            sx={{ width: 85, height: 85 }}
+          />
           <Box
-            onClick={() => navigate(getHomePath(sessionUser))}
+            component="span"
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              cursor: 'pointer',
-              '&:hover': { opacity: 0.85 },
+              fontWeight: 'bold',
+              fontSize: '1.5rem',
+              color: 'inherit',
+              fontFamily: 'sans-serif',
             }}
           >
-            <Avatar
-              alt="CdTec"
-              src="/logo_ufpel.png"
-              variant="square"
-              sx={{ width: 85, height: 85 }}
-            />
-            <Box
-              component="span"
-              sx={{
-                fontWeight: 'bold',
-                fontSize: '1.5rem',
-                color: 'inherit',
-                fontFamily: 'sans-serif',
-              }}
-            >
-              Mural Digital
-            </Box>
+            Mural Digital
           </Box>
+        </Box>
 
-          <div style={{ flexGrow: 1 }} />
+        <div style={{ flexGrow: 1 }} />
 
-          <Button
-            onClick={toggleMenu}
-            variant="text"
-            color="secondary"
-            size="large"
-            startIcon={<ArrowDropDownIcon />}
-            sx={{ textTransform: 'none', fontWeight: 'bold' }}
-          >
-            {displayName}
-          </Button>
-        </Toolbar>
-      </AppBar>
+        <Button
+          onClick={() => navigate('/perfil')}
+          variant="outlined"
+          color="inherit"
+          size="large"
+          sx={{
+            textTransform: 'none',
+            fontWeight: 'bold',
+            borderColor: 'white',
+          }}
+        >
+          {displayName}
+        </Button>
 
-      <PopperMenu
-        anchorEl={menuAnchor}
-        onClose={() => setMenuAnchor(null)}
-        placement="bottom-end"
-        width={160}
-        items={[
-          { label: 'Perfil', onClick: () => navigate('/perfil') },
-          {
-            label: 'Sair',
-            onClick: () => {
-              clearSession();
-              navigate('/login');
-            },
-          },
-        ]}
-      />
-    </>
+        <Button
+          onClick={() => {
+            clearSession();
+            navigate('/login');
+          }}
+          variant="contained"
+          color="secondary"
+          size="large"
+          sx={{ textTransform: 'none', fontWeight: 'bold' }}
+        >
+          Sair
+        </Button>
+      </Toolbar>
+    </AppBar>
   );
 }

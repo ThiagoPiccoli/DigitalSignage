@@ -4,14 +4,24 @@ const BASE_URL = `http://${window.location.hostname}:3333`;
 
 export async function api(path: string, options: RequestInit = {}) {
   const token = getAuthToken();
+  const isFormData = options.body instanceof FormData;
+
+  const headers = new Headers(options.headers);
+
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  // Let the browser define multipart Content-Type with boundary for FormData.
+  if (isFormData) {
+    headers.delete('Content-Type');
+  } else if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
+    headers,
   });
 
   const isLoginRequest =

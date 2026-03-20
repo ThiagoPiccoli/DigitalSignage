@@ -10,7 +10,7 @@ export default class MediaService {
   }
 
   private static ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']
-  private static ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg']
+  private static ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg', 'mov']
   private static ALLOWED_HTML_EXTENSIONS = ['html', 'htm']
 
   static async ensureMediaDir(): Promise<void> {
