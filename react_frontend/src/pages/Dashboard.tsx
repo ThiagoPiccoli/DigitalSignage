@@ -14,7 +14,14 @@ import {
   TableRow,
   TextField,
 } from '@mui/material';
-import { FileUpload, SearchRounded } from '@mui/icons-material';
+import {
+  AccessTimeRounded,
+  FileUpload,
+  MenuBookRounded,
+  PhotoCameraRounded,
+  PlayCircleRounded,
+  SearchRounded,
+} from '@mui/icons-material';
 import React, { useEffect } from 'react';
 import TablePagination from '@mui/material/TablePagination';
 import Typography from '@mui/material/Typography';
@@ -125,6 +132,10 @@ function isScheduleActive(schedule?: Schedule) {
     ? schedule.days.map(day => String(day).toLowerCase())
     : [];
 
+  if (validDays.length === 0) {
+    return false;
+  }
+
   if (validDays.length > 0 && !validDays.includes(dayKey)) {
     return false;
   }
@@ -150,7 +161,7 @@ interface DashboardProps {
 export default function Dashboard({ adminMode = false }: DashboardProps) {
   const navigate = useNavigate();
   const [page, setPage] = React.useState(0);
-  const rowsPerPage = 10;
+  const rowsPerPage = adminMode ? 7 : 10;
 
   // Admin IP address state
   const [serverIps, setServerIps] = React.useState<string[]>([]);
@@ -268,6 +279,10 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
       return 'Sempre';
     }
 
+    if (!Array.isArray(schedule.days) || schedule.days.length === 0) {
+      return 'Desativado';
+    }
+
     const dayLabelMap: Record<string, string> = {
       mon: 'Seg',
       tue: 'Ter',
@@ -369,6 +384,31 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         r.criador.toLowerCase().includes(normalizedSearch)
       );
     });
+
+  const contentCounts = React.useMemo(() => {
+    return signages.reduce(
+      (acc, item) => {
+        if (item.fileType === 'aviso') {
+          acc.aviso += 1;
+        }
+        if (item.fileType === 'contador') {
+          acc.contador += 1;
+        }
+        if (item.fileType === 'video') {
+          acc.video += 1;
+        }
+        if (item.fileType === 'image') {
+          acc.imagem += 1;
+        }
+
+        acc.total += 1;
+        return acc;
+      },
+      { aviso: 0, contador: 0, video: 0, imagem: 0, total: 0 },
+    );
+  }, [signages]);
+
+  const playerAccessUrl = `${window.location.origin}/player`;
 
   const togglePopper =
     (setter: React.Dispatch<React.SetStateAction<HTMLElement | null>>) =>
@@ -545,45 +585,10 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
     <Box>
       <TopBar />
 
-      <Container maxWidth="lg" sx={{ mt: 6 }}>
-        <Paper
-          elevation={10}
-          sx={{
-            p: 3,
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            mb: 3,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', md: 'center' },
-              gap: 2,
-              flexDirection: { xs: 'column', md: 'row' },
-            }}
-          >
-            <Box>
-              <Typography variant="h6" fontWeight="bold">
-                Conteúdos do Player
-              </Typography>
-              <Typography color="text.secondary">
-                Visualize os itens enviados para reprodução: vídeos, imagens,
-                avisos e contadores.
-              </Typography>
-            </Box>
-            <Button
-              variant="contained"
-              sx={{ textTransform: 'none' }}
-              onClick={() => navigate('/player')}
-            >
-              Abrir Tela do Player
-            </Button>
-          </Box>
-        </Paper>
-
+      <Container
+        maxWidth={false}
+        sx={{ mt: 3, px: { xs: 1.5, sm: 2, md: 3, lg: 4 } }}
+      >
         {adminMode && (
           <Paper
             elevation={10}
@@ -609,8 +614,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                   Painel Administrativo
                 </Typography>
                 <Typography color="text.secondary">
-                  Gerencie usuários e configurações globais do mural a partir
-                  daqui.
+                  Gerencie usuários do mural a partir daqui.
                 </Typography>
                 {serverIps.length > 0 && (
                   <Typography variant="body2" sx={{ mt: 1 }}>
@@ -626,26 +630,19 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 >
                   Lista de Usuários
                 </Button>
-                <Button
-                  variant="contained"
-                  sx={{ textTransform: 'none' }}
-                  onClick={() => navigate('/configuracoes')}
-                >
-                  Configurações
-                </Button>
               </Box>
             </Box>
           </Paper>
         )}
 
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'stretch' }}>
           <Paper
             elevation={10}
             sx={{
-              flex: 2,
+              flex: 1,
               p: 2,
               borderRadius: 3,
-              height: '80vh',
+              height: adminMode ? '75vh' : 'calc(100vh - 104px)',
               border: '1px solid',
               borderColor: 'divider',
             }}
@@ -790,6 +787,202 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
               onPageChange={(_e, p) => setPage(p)}
             />
           </Paper>
+
+          <Box
+            sx={{
+              width: { xs: 240, md: 280 },
+              height: adminMode ? '75vh' : 'calc(100vh - 104px)',
+              display: { xs: 'none', lg: 'flex' },
+              flexDirection: 'column',
+              gap: 1.5,
+            }}
+          >
+            <Paper
+              elevation={10}
+              sx={{
+                p: 2.25,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.3,
+              }}
+            >
+              <Typography variant="h6" fontWeight={700}>
+                Mural disponível
+              </Typography>
+
+              <Box
+                sx={{
+                  borderRadius: 1.5,
+                  overflow: 'hidden',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: '#000',
+                  aspectRatio: '1 / 1',
+                  width: '100%',
+                  maxHeight: 280,
+                }}
+              >
+                <Box
+                  component="iframe"
+                  src="/player?embed=1"
+                  title="Preview do player"
+                  scrolling="no"
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    border: 0,
+                    overflow: 'hidden',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </Box>
+
+              <Typography variant="body2" color="text.secondary">
+                Acesse o mural por este endereço na rede local.
+              </Typography>
+
+              <Box
+                sx={{
+                  p: 1.25,
+                  borderRadius: 1.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'background.default',
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ wordBreak: 'break-all', lineHeight: 1.4 }}
+                >
+                  {playerAccessUrl}
+                </Typography>
+              </Box>
+
+              <Button
+                fullWidth
+                variant="contained"
+                sx={{ textTransform: 'none', py: 0.9 }}
+                onClick={() => navigate('/player')}
+              >
+                Acessar mural
+              </Button>
+            </Paper>
+
+            <Paper
+              elevation={10}
+              sx={{
+                p: 1.5,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: 1.2,
+                flex: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 0.5,
+                }}
+              >
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Resumo de conteudos
+                </Typography>
+                <Chip
+                  size="small"
+                  color="primary"
+                  label={`Total: ${contentCounts.total}`}
+                />
+              </Box>
+
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 1,
+                  width: '100%',
+                }}
+              >
+                {[
+                  {
+                    label: 'Avisos',
+                    value: contentCounts.aviso,
+                    color: '#2e7d32',
+                    bg: 'rgba(46,125,50,0.1)',
+                    icon: MenuBookRounded,
+                  },
+                  {
+                    label: 'Contadores',
+                    value: contentCounts.contador,
+                    color: '#6a1b9a',
+                    bg: 'rgba(106,27,154,0.1)',
+                    icon: AccessTimeRounded,
+                  },
+                  {
+                    label: 'Videos',
+                    value: contentCounts.video,
+                    color: '#ef6c00',
+                    bg: 'rgba(239,108,0,0.1)',
+                    icon: PlayCircleRounded,
+                  },
+                  {
+                    label: 'Imagens',
+                    value: contentCounts.imagem,
+                    color: '#1565c0',
+                    bg: 'rgba(21,101,192,0.1)',
+                    icon: PhotoCameraRounded,
+                  },
+                ].map(item => (
+                  <Box
+                    key={item.label}
+                    sx={{
+                      p: 1.1,
+                      borderRadius: 1.25,
+                      bgcolor: item.bg,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      aspectRatio: '1 / 1',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 0.6,
+                        width: '100%',
+                      }}
+                    >
+                      <item.icon sx={{ fontSize: 16, color: item.color }} />
+                      <Typography variant="caption" fontWeight={600}>
+                        {item.label}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={800}
+                      sx={{ color: item.color, textAlign: 'center' }}
+                    >
+                      {item.value}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Paper>
+          </Box>
         </Box>
       </Container>
 

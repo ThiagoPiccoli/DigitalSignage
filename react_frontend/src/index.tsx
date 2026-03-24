@@ -5,6 +5,24 @@ import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
 
 const theme = createTheme({
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          height: '100%',
+          overflow: 'hidden',
+        },
+        body: {
+          height: '100%',
+          overflow: 'hidden',
+        },
+        '#root': {
+          height: '100%',
+          overflow: 'hidden',
+        },
+      },
+    },
+  },
   palette: {
     // No 'mode' property — MUI is light by default and stays light always
     primary: {

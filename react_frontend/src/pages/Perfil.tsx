@@ -2,7 +2,15 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
-import { Alert, Button, Divider, TextField } from '@mui/material';
+import {
+  Alert,
+  Button,
+  Divider,
+  IconButton,
+  InputAdornment,
+  TextField,
+} from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import React from 'react';
 
 import TopBar from '../components/TopBar';
@@ -24,6 +32,44 @@ export default function Perfil() {
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [passwordError, setPasswordError] = React.useState('');
   const [passwordSuccess, setPasswordSuccess] = React.useState(false);
+  const [showOldPassword, setShowOldPassword] = React.useState(false);
+  const [showNewPassword, setShowNewPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  const trimmedEmail = email.trim();
+  const trimmedUsername = username.trim();
+  const isEmailValid = /^\S+@\S+\.\S+$/.test(trimmedEmail);
+  const profileChanged =
+    trimmedEmail !== (user?.email ?? '') ||
+    trimmedUsername !== (user?.username ?? '');
+  const isProfileSaveDisabled =
+    !user ||
+    !trimmedEmail ||
+    !trimmedUsername ||
+    !isEmailValid ||
+    !profileChanged;
+
+  const isPasswordMismatch =
+    confirmPassword.length > 0 && newPassword !== confirmPassword;
+  const isPasswordTooShort = newPassword.length > 0 && newPassword.length < 6;
+  const isPasswordSaveDisabled =
+    !oldPassword ||
+    !newPassword ||
+    !confirmPassword ||
+    isPasswordMismatch ||
+    isPasswordTooShort;
+
+  const getPasswordAdornment = (
+    visible: boolean,
+    onToggle: () => void,
+    label: string,
+  ) => (
+    <InputAdornment position="end">
+      <IconButton edge="end" onClick={onToggle} aria-label={label}>
+        {visible ? <VisibilityOff /> : <Visibility />}
+      </IconButton>
+    </InputAdornment>
+  );
 
   const handleProfileSave = async () => {
     if (!user) {
@@ -33,7 +79,10 @@ export default function Perfil() {
     try {
       const res = await api(`/users/${user.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ email, username }),
+        body: JSON.stringify({
+          email: trimmedEmail,
+          username: trimmedUsername,
+        }),
       });
 
       if (!res.ok) {
@@ -45,8 +94,8 @@ export default function Perfil() {
       } | null;
 
       updateSessionUser({
-        email: data?.user?.email ?? email,
-        username: data?.user?.username ?? username,
+        email: data?.user?.email ?? trimmedEmail,
+        username: data?.user?.username ?? trimmedUsername,
       });
 
       setProfileSuccess(true);
@@ -113,20 +162,29 @@ export default function Perfil() {
               label="Email"
               type="email"
               fullWidth
+              autoFocus
               value={email}
               onChange={e => setEmail(e.target.value)}
+              error={email.length > 0 && !isEmailValid}
+              helperText={
+                email.length > 0 && !isEmailValid
+                  ? 'Email incompleto ou inválido.'
+                  : 'Obrigatório'
+              }
             />
             <TextField
               label="Nome de Usuário"
               fullWidth
               value={username}
               onChange={e => setUsername(e.target.value)}
+              helperText="Obrigatório"
             />
             <Button
               variant="contained"
               color="primary"
               sx={{ textTransform: 'none', alignSelf: 'flex-end' }}
               onClick={handleProfileSave}
+              disabled={isProfileSaveDisabled}
             >
               Salvar
             </Button>
@@ -150,31 +208,76 @@ export default function Perfil() {
             {passwordError && <Alert severity="error">{passwordError}</Alert>}
             <TextField
               label="Senha Atual"
-              type="password"
+              type={showOldPassword ? 'text' : 'password'}
               fullWidth
               value={oldPassword}
               onChange={e => setOldPassword(e.target.value)}
+              helperText="Obrigatório"
+              slotProps={{
+                input: {
+                  endAdornment: getPasswordAdornment(
+                    showOldPassword,
+                    () => setShowOldPassword(prev => !prev),
+                    showOldPassword
+                      ? 'Ocultar senha atual'
+                      : 'Mostrar senha atual',
+                  ),
+                },
+              }}
             />
             <Divider />
             <TextField
               label="Nova Senha"
-              type="password"
+              type={showNewPassword ? 'text' : 'password'}
               fullWidth
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
+              error={isPasswordTooShort}
+              helperText={
+                isPasswordTooShort
+                  ? 'A nova senha deve ter pelo menos 6 caracteres.'
+                  : 'Mínimo de 6 caracteres'
+              }
+              slotProps={{
+                input: {
+                  endAdornment: getPasswordAdornment(
+                    showNewPassword,
+                    () => setShowNewPassword(prev => !prev),
+                    showNewPassword
+                      ? 'Ocultar nova senha'
+                      : 'Mostrar nova senha',
+                  ),
+                },
+              }}
             />
             <TextField
               label="Confirmar Nova Senha"
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               fullWidth
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
+              error={isPasswordMismatch}
+              helperText={
+                isPasswordMismatch ? 'As senhas não coincidem' : 'Obrigatório'
+              }
+              slotProps={{
+                input: {
+                  endAdornment: getPasswordAdornment(
+                    showConfirmPassword,
+                    () => setShowConfirmPassword(prev => !prev),
+                    showConfirmPassword
+                      ? 'Ocultar confirmação de senha'
+                      : 'Mostrar confirmação de senha',
+                  ),
+                },
+              }}
             />
             <Button
               variant="contained"
               color="primary"
               sx={{ textTransform: 'none', alignSelf: 'flex-end' }}
               onClick={handlePasswordSave}
+              disabled={isPasswordSaveDisabled}
             >
               Alterar Senha
             </Button>

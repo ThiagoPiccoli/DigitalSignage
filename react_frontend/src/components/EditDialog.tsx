@@ -87,14 +87,37 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
   }, [row]);
 
   const isMedia = row?.tipo === 'Vídeo' || row?.tipo === 'Imagem';
+  const isScheduleDisabled =
+    Array.isArray(schedule.days) && schedule.days.length === 0;
+  const isSaveDisabled = !row || !nome.trim();
+
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] ?? null);
   };
 
+  const handleFilePickerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openFilePicker();
+    }
+  };
+
   const handleSave = () => {
     if (!row) return;
-    const payload: EditPayload = { nome, tipo: row.tipo, schedule };
+    const trimmedNome = nome.trim();
+    if (!trimmedNome) {
+      return;
+    }
+
+    const payload: EditPayload = {
+      nome: trimmedNome,
+      tipo: row.tipo,
+      schedule,
+    };
     if (row.tipo === 'Aviso') payload.aviso = aviso;
     if (row.tipo === 'Contador') {
       payload.deadlineISO = deadlineISO;
@@ -185,7 +208,10 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
               onChange={handleFileChange}
             />
             <Box
-              onClick={() => fileInputRef.current?.click()}
+              onClick={openFilePicker}
+              role="button"
+              tabIndex={0}
+              onKeyDown={handleFilePickerKeyDown}
               sx={{
                 border: '2px dashed',
                 borderColor: file ? 'primary.main' : 'divider',
@@ -224,6 +250,12 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
         )}
 
         <ScheduleFields value={schedule} onChange={setSchedule} />
+        {isScheduleDisabled && (
+          <Typography variant="caption" color="warning.main">
+            Conteúdo desativado para todos os dias. Use "Todos" para reativar ou
+            clique em Salvar para aplicar.
+          </Typography>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">
@@ -233,7 +265,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
           onClick={handleSave}
           variant="contained"
           color="primary"
-          disabled={!row}
+          disabled={isSaveDisabled}
         >
           Salvar
         </Button>

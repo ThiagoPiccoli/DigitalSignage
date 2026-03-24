@@ -33,6 +33,7 @@ export default function AvisoDialog({
   onSave,
 }: AvisoDialogProps) {
   const [values, setValues] = React.useState<AvisoRow | null>(null);
+  const isSaveDisabled = !values?.nome.trim() || !values?.aviso.trim();
 
   React.useEffect(() => {
     setValues(
@@ -63,6 +64,8 @@ export default function AvisoDialog({
           fullWidth
           value={values?.nome ?? ''}
           onChange={handleChange('nome')}
+          autoFocus
+          helperText="Obrigatório"
           sx={{ mt: 1 }}
         />
         <TextField
@@ -72,6 +75,7 @@ export default function AvisoDialog({
           minRows={3}
           value={values?.aviso ?? ''}
           onChange={handleChange('aviso')}
+          helperText="Obrigatório"
         />
         <Box sx={{ display: 'flex', gap: 2 }}>
           <TextField
@@ -89,7 +93,7 @@ export default function AvisoDialog({
             type="color"
             value={values?.bgColor ?? '#000000'}
             onChange={handleChange('bgColor')}
-            helperText="Cor de fundo do HTML"
+            helperText="Cor de fundo do aviso"
             slotProps={{ inputLabel: { shrink: true } }}
           />
         </Box>
@@ -114,6 +118,7 @@ export default function AvisoDialog({
           onClick={() => values && onSave(values)}
           variant="contained"
           color="primary"
+          disabled={isSaveDisabled}
         >
           Salvar
         </Button>

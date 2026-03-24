@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Snackbar,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { getHomePath, getSessionUser } from '../auth';
-
-type Schedule = {
-  days: string[];
-  start: string;
-  end: string;
-  tz: string;
-};
+import { getHomePath } from '../auth';
 
 type PlayerMediaItem = {
   id: number;
@@ -18,7 +18,6 @@ type PlayerMediaItem = {
   fileUrl: string;
   durationMs: number;
   createdAt: string;
-  schedule?: Schedule;
 };
 
 type HtmlItem = {
@@ -27,7 +26,6 @@ type HtmlItem = {
   fileType: 'aviso' | 'contador';
   htmlUrl: string;
   createdAt: string;
-  schedule?: Schedule;
 };
 
 type PlaylistItem = {
@@ -41,104 +39,39 @@ type PlaylistItem = {
 
 const FALLBACK_IMAGE_DURATION_MS = 10000;
 const FALLBACK_HTML_DURATION_MS = 15000;
-const DEFAULT_TIMEZONE = 'America/Sao_Paulo';
 
-const WEEKDAY_MAP: Record<string, string> = {
-  sun: 'sun',
-  mon: 'mon',
-  tue: 'tue',
-  wed: 'wed',
-  thu: 'thu',
-  fri: 'fri',
-  sat: 'sat',
+type ManifestDefaults = {
+  imageDurationMs: number;
+  htmlDurationMs: number;
+  fitMode: 'fit' | 'fill' | 'stretch';
+  bgColor: string;
+  mute: boolean;
+  volume: number;
 };
 
-function parseTimeToMinutes(input: string, fallback: number) {
-  const match = String(input || '').match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) {
-    return fallback;
+type ManifestResponse = {
+  defaults?: Partial<ManifestDefaults>;
+};
+
+const DEFAULT_MANIFEST: ManifestDefaults = {
+  imageDurationMs: FALLBACK_IMAGE_DURATION_MS,
+  htmlDurationMs: FALLBACK_HTML_DURATION_MS,
+  fitMode: 'fit',
+  bgColor: '#000000',
+  mute: true,
+  volume: 1,
+};
+
+function resolveObjectFit(fitMode: ManifestDefaults['fitMode']) {
+  if (fitMode === 'fill') {
+    return 'cover';
   }
 
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (
-    Number.isNaN(hours) ||
-    Number.isNaN(minutes) ||
-    hours < 0 ||
-    hours > 23 ||
-    minutes < 0 ||
-    minutes > 59
-  ) {
-    return fallback;
+  if (fitMode === 'stretch') {
+    return 'fill';
   }
 
-  return hours * 60 + minutes;
-}
-
-function getCurrentDayAndMinutes(timeZone?: string) {
-  const now = new Date();
-
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: timeZone || DEFAULT_TIMEZONE,
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).formatToParts(now);
-
-    const weekday = parts.find(part => part.type === 'weekday')?.value;
-    const hour = Number(parts.find(part => part.type === 'hour')?.value ?? NaN);
-    const minute = Number(
-      parts.find(part => part.type === 'minute')?.value ?? NaN,
-    );
-
-    if (!weekday || Number.isNaN(hour) || Number.isNaN(minute)) {
-      throw new Error('Could not parse date parts');
-    }
-
-    const dayKey = WEEKDAY_MAP[weekday.toLowerCase().slice(0, 3)] || 'sun';
-    return {
-      dayKey,
-      minutes: hour * 60 + minute,
-    };
-  } catch {
-    const fallbackDay = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][
-      now.getDay()
-    ];
-    return {
-      dayKey: fallbackDay,
-      minutes: now.getHours() * 60 + now.getMinutes(),
-    };
-  }
-}
-
-function isScheduleActive(schedule?: Schedule) {
-  if (!schedule) {
-    return true;
-  }
-
-  const { dayKey, minutes } = getCurrentDayAndMinutes(schedule.tz);
-  const validDays = Array.isArray(schedule.days)
-    ? schedule.days.map(day => String(day).toLowerCase())
-    : [];
-
-  if (validDays.length > 0 && !validDays.includes(dayKey)) {
-    return false;
-  }
-
-  const startMinutes = parseTimeToMinutes(schedule.start, 0);
-  const endMinutes = parseTimeToMinutes(schedule.end, 23 * 60 + 59);
-
-  if (startMinutes === endMinutes) {
-    return true;
-  }
-
-  if (startMinutes < endMinutes) {
-    return minutes >= startMinutes && minutes <= endMinutes;
-  }
-
-  return minutes >= startMinutes || minutes <= endMinutes;
+  return 'contain';
 }
 
 function normalizeMediaUrl(url: string) {
@@ -163,13 +96,13 @@ function normalizeMediaUrl(url: string) {
 
 export default function Player() {
   const navigate = useNavigate();
-  const sessionUser = getSessionUser();
-  const exitPath = sessionUser ? getHomePath(sessionUser) : '/login';
   const [playlistItems, setPlaylistItems] = useState<PlaylistItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [defaults, setDefaults] = useState<ManifestDefaults>(DEFAULT_MANIFEST);
   const [showEscHint, setShowEscHint] = useState(true);
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -177,7 +110,7 @@ export default function Player() {
         return;
       }
 
-      navigate(exitPath, { replace: true });
+      navigate(getHomePath(), { replace: true });
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -185,17 +118,7 @@ export default function Player() {
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [exitPath, navigate]);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setShowEscHint(false);
-    }, 3500);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, []);
+  }, [navigate]);
 
   const goToNext = useCallback(() => {
     setCurrentIndex(prev => (prev + 1) % playlistItems.length);
@@ -218,9 +141,47 @@ export default function Player() {
       const mediaData = (await mediaRes.json()) as PlayerMediaItem[];
       const htmlData = (await htmlRes.json()) as HtmlItem[];
 
+      let nextDefaults = DEFAULT_MANIFEST;
+      try {
+        const manifestRes = await api('/manifest');
+        if (manifestRes.ok) {
+          const manifestData = (await manifestRes.json()) as ManifestResponse;
+          const serverDefaults = manifestData.defaults;
+          nextDefaults = {
+            imageDurationMs:
+              Number(serverDefaults?.imageDurationMs) > 0
+                ? Number(serverDefaults?.imageDurationMs)
+                : DEFAULT_MANIFEST.imageDurationMs,
+            htmlDurationMs:
+              Number(serverDefaults?.htmlDurationMs) > 0
+                ? Number(serverDefaults?.htmlDurationMs)
+                : DEFAULT_MANIFEST.htmlDurationMs,
+            fitMode:
+              serverDefaults?.fitMode === 'fill' ||
+              serverDefaults?.fitMode === 'stretch'
+                ? serverDefaults.fitMode
+                : 'fit',
+            bgColor: serverDefaults?.bgColor || DEFAULT_MANIFEST.bgColor,
+            mute:
+              typeof serverDefaults?.mute === 'boolean'
+                ? serverDefaults.mute
+                : DEFAULT_MANIFEST.mute,
+            volume:
+              typeof serverDefaults?.volume === 'number' &&
+              serverDefaults.volume >= 0 &&
+              serverDefaults.volume <= 1
+                ? serverDefaults.volume
+                : DEFAULT_MANIFEST.volume,
+          };
+        }
+      } catch (manifestError) {
+        console.warn('Could not load manifest defaults:', manifestError);
+      }
+
+      setDefaults(nextDefaults);
+
       const normalizedMediaItems: PlaylistItem[] = mediaData
         .filter(item => item.fileType === 'image' || item.fileType === 'video')
-        .filter(item => isScheduleActive(item.schedule))
         .map(item => ({
           id: item.id,
           title: item.title,
@@ -229,7 +190,7 @@ export default function Player() {
           durationMs:
             Number(item.durationMs) > 0
               ? Number(item.durationMs)
-              : FALLBACK_IMAGE_DURATION_MS,
+              : nextDefaults.imageDurationMs,
           createdAt: item.createdAt,
         }));
 
@@ -237,13 +198,12 @@ export default function Player() {
         .filter(
           item => item.fileType === 'aviso' || item.fileType === 'contador',
         )
-        .filter(item => isScheduleActive(item.schedule))
         .map(item => ({
           id: item.id,
           title: item.title,
           type: item.fileType,
           url: normalizeMediaUrl(item.htmlUrl),
-          durationMs: FALLBACK_HTML_DURATION_MS,
+          durationMs: nextDefaults.htmlDurationMs,
           createdAt: item.createdAt,
         }));
 
@@ -276,8 +236,7 @@ export default function Player() {
       return;
     }
 
-    const currentDuration =
-      currentItem.durationMs || FALLBACK_IMAGE_DURATION_MS;
+    const currentDuration = currentItem.durationMs || defaults.imageDurationMs;
 
     const timeoutId = window.setTimeout(() => {
       goToNext();
@@ -286,7 +245,25 @@ export default function Player() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [playlistItems, currentIndex, goToNext]);
+  }, [playlistItems, currentIndex, goToNext, defaults.imageDurationMs]);
+
+  useEffect(() => {
+    const currentVideo = videoRef.current;
+    if (!currentVideo) {
+      return;
+    }
+
+    currentVideo.muted = defaults.mute;
+    if (!defaults.mute) {
+      currentVideo.volume = defaults.volume;
+    }
+  }, [currentIndex, defaults.mute, defaults.volume]);
+
+  useEffect(() => {
+    if (!loading && !error) {
+      setShowEscHint(true);
+    }
+  }, [loading, error]);
 
   const currentItem = useMemo(
     () => playlistItems[currentIndex],
@@ -298,7 +275,7 @@ export default function Player() {
       sx={{
         width: '100vw',
         height: '100vh',
-        bgcolor: '#000',
+        bgcolor: defaults.bgColor,
         overflow: 'hidden',
       }}
     >
@@ -308,23 +285,6 @@ export default function Player() {
           sx={{ position: 'absolute', top: 16, left: 16, zIndex: 2 }}
         >
           {error}
-        </Alert>
-      )}
-
-      {showEscHint && (
-        <Alert
-          severity="info"
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            zIndex: 2,
-            bgcolor: 'rgba(20,20,20,0.85)',
-            color: 'grey.100',
-            '& .MuiAlert-icon': { color: 'grey.100' },
-          }}
-        >
-          Pressione ESC para sair do player
         </Alert>
       )}
 
@@ -356,7 +316,11 @@ export default function Player() {
           key={currentItem.id}
           src={currentItem.url}
           alt={currentItem.title}
-          sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: resolveObjectFit(defaults.fitMode),
+          }}
         />
       )}
 
@@ -364,12 +328,17 @@ export default function Player() {
         <Box
           component="video"
           key={currentItem.id}
+          ref={videoRef}
           src={currentItem.url}
           autoPlay
-          muted
+          muted={defaults.mute}
           playsInline
           onEnded={goToNext}
-          sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: resolveObjectFit(defaults.fitMode),
+          }}
         />
       )}
 
@@ -383,6 +352,22 @@ export default function Player() {
             sx={{ width: '100%', height: '100%', border: 0 }}
           />
         )}
+
+      <Snackbar
+        open={!loading && !error && showEscHint}
+        autoHideDuration={3200}
+        onClose={() => setShowEscHint(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity="info"
+          variant="filled"
+          onClose={() => setShowEscHint(false)}
+          sx={{ width: '100%', bgcolor: 'rgba(0,0,0,0.85)', color: '#fff' }}
+        >
+          Pressione ESC para sair
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -3,7 +3,6 @@ import Login from './pages/Login';
 import Dashboard from 'pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Perfil from './pages/Perfil';
-import Configuracoes from './pages/Configuracoes';
 import Usuarios from './pages/Usuarios';
 import Player from './pages/Player';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -42,14 +41,6 @@ function App() {
             <ProtectedRoute>
               <Perfil />
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/configuracoes"
-          element={
-            <AdminRoute>
-              <Configuracoes />
-            </AdminRoute>
           }
         />
         <Route

@@ -33,6 +33,7 @@ export default function ContadorDialog({
   onSave,
 }: ContadorDialogProps) {
   const [values, setValues] = React.useState<ContadorRow | null>(null);
+  const isSaveDisabled = !values?.nome.trim() || !values?.deadlineISO;
 
   React.useEffect(() => {
     setValues(
@@ -63,6 +64,8 @@ export default function ContadorDialog({
           fullWidth
           value={values?.nome ?? ''}
           onChange={handleChange('nome')}
+          autoFocus
+          helperText="Obrigatório"
           sx={{ mt: 1 }}
         />
         <TextField
@@ -71,6 +74,7 @@ export default function ContadorDialog({
           type="datetime-local"
           value={values?.deadlineISO ?? ''}
           onChange={handleChange('deadlineISO')}
+          helperText="Obrigatório"
           slotProps={{ inputLabel: { shrink: true } }}
         />
         <Box sx={{ display: 'flex', gap: 2 }}>
@@ -89,7 +93,7 @@ export default function ContadorDialog({
             type="color"
             value={values?.bgColor ?? '#000000'}
             onChange={handleChange('bgColor')}
-            helperText="Cor de fundo do HTML"
+            helperText="Cor de fundo do contador"
             slotProps={{ inputLabel: { shrink: true } }}
           />
         </Box>
@@ -114,7 +118,7 @@ export default function ContadorDialog({
           onClick={() => values && onSave(values)}
           variant="contained"
           color="primary"
-          disabled={!values?.nome || !values?.deadlineISO}
+          disabled={isSaveDisabled}
         >
           Salvar
         </Button>

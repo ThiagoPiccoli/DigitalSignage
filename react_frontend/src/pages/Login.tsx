@@ -3,6 +3,9 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
@@ -20,6 +23,10 @@ export default function Login() {
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
+
+  const trimmedEmail = email.trim();
+  const canSubmit = !loading && trimmedEmail.length > 0 && password.length > 0;
 
   React.useEffect(() => {
     const token = getAuthToken();
@@ -36,7 +43,7 @@ export default function Login() {
     try {
       const res = await api('/sessions', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: trimmedEmail, password }),
       });
 
       if (res.ok) {
@@ -88,15 +95,35 @@ export default function Login() {
           label="Email"
           type="email"
           fullWidth
+          autoFocus
           value={email}
           onChange={e => setEmail(e.target.value)}
+          helperText="Obrigatório"
         />
         <TextField
           label="Senha"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           fullWidth
           value={password}
           onChange={e => setPassword(e.target.value)}
+          helperText="Obrigatório"
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    edge="end"
+                    onClick={() => setShowPassword(prev => !prev)}
+                    aria-label={
+                      showPassword ? 'Ocultar senha' : 'Mostrar senha'
+                    }
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
         />
         <Button
           type="submit"
@@ -104,7 +131,7 @@ export default function Login() {
           variant="contained"
           color="primary"
           fullWidth
-          disabled={loading || !email || !password}
+          disabled={!canSubmit}
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </Button>

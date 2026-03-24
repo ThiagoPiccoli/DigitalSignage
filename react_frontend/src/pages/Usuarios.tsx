@@ -19,8 +19,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Alert,
+  IconButton,
 } from '@mui/material';
-import { SearchRounded, PersonAdd } from '@mui/icons-material';
+import {
+  SearchRounded,
+  PersonAdd,
+  Visibility,
+  VisibilityOff,
+} from '@mui/icons-material';
 import React, { useEffect } from 'react';
 import TablePagination from '@mui/material/TablePagination';
 
@@ -36,6 +43,10 @@ type User = {
 };
 
 export default function Usuarios() {
+  const topBarHeight = 88;
+  const pageVerticalPadding = 48;
+  const panelHeight = `calc(100vh - ${topBarHeight}px - ${pageVerticalPadding}px)`;
+
   const [page, setPage] = React.useState(0);
   const rowsPerPage = 10;
   const [search, setSearch] = React.useState('');
@@ -48,6 +59,7 @@ export default function Usuarios() {
   const [newIsAdmin, setNewIsAdmin] = React.useState(false);
   const [createError, setCreateError] = React.useState('');
   const [createSuccess, setCreateSuccess] = React.useState(false);
+  const [showNewPassword, setShowNewPassword] = React.useState(false);
 
   // Delete dialog
   const [deleteUser, setDeleteUser] = React.useState<User | null>(null);
@@ -59,6 +71,9 @@ export default function Usuarios() {
   const [resetPasswordConfirm, setResetPasswordConfirm] = React.useState('');
   const [resetError, setResetError] = React.useState('');
   const [resetSuccess, setResetSuccess] = React.useState(false);
+  const [showResetPassword, setShowResetPassword] = React.useState(false);
+  const [showResetPasswordConfirm, setShowResetPasswordConfirm] =
+    React.useState(false);
 
   const [users, setUsers] = React.useState<User[]>([]);
 
@@ -85,6 +100,27 @@ export default function Usuarios() {
       u.username.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const trimmedCreateEmail = newEmail.trim();
+  const trimmedCreateUsername = newUsername.trim();
+  const isCreateEmailValid = /^\S+@\S+\.\S+$/.test(trimmedCreateEmail);
+  const isCreatePasswordValid = newPassword.length >= 6;
+  const isCreateDisabled =
+    !trimmedCreateEmail ||
+    !trimmedCreateUsername ||
+    !newPassword ||
+    !isCreateEmailValid ||
+    !isCreatePasswordValid;
+
+  const isResetPasswordTooShort =
+    resetPassword.length > 0 && resetPassword.length < 6;
+  const isResetMismatch =
+    resetPasswordConfirm.length > 0 && resetPassword !== resetPasswordConfirm;
+  const isResetDisabled =
+    !resetPassword ||
+    !resetPasswordConfirm ||
+    isResetPasswordTooShort ||
+    isResetMismatch;
 
   const handleCreateSave = async () => {
     setCreateError('');
@@ -140,18 +176,12 @@ export default function Usuarios() {
         await fetchUsers();
       }
 
-      console.log('User created:', {
-        email: newEmail,
-        username: newUsername,
-        password: newPassword,
-        isAdmin: newIsAdmin,
-      });
-
       setCreateOpen(false);
       setNewEmail('');
       setNewUsername('');
       setNewPassword('');
       setNewIsAdmin(false);
+      setShowNewPassword(false);
       setCreateError('');
       setPage(0);
       setCreateSuccess(true);
@@ -184,7 +214,6 @@ export default function Usuarios() {
   const handleResetPassword = async () => {
     setResetError('');
 
-    console.log('Password reset for:', resetUser?.id, 'new:', resetPassword);
     const userId = resetUser?.id;
 
     if (!userId) {
@@ -215,22 +244,35 @@ export default function Usuarios() {
     setResetUser(null);
     setResetPassword('');
     setResetPasswordConfirm('');
+    setShowResetPassword(false);
+    setShowResetPasswordConfirm(false);
     setResetSuccess(true);
   };
 
   return (
-    <Box>
+    <Box sx={{ height: '100vh', overflow: 'hidden' }}>
       <TopBar />
 
-      <Container maxWidth="lg" sx={{ mt: 6 }}>
+      <Container
+        maxWidth="lg"
+        sx={{
+          mt: 3,
+          mb: 3,
+          height: `calc(100vh - ${topBarHeight}px)`,
+          overflow: 'hidden',
+        }}
+      >
         <Paper
           elevation={10}
           sx={{
             p: 2,
             borderRadius: 3,
-            height: '80vh',
+            height: panelHeight,
             border: '1px solid',
             borderColor: 'divider',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -267,7 +309,10 @@ export default function Usuarios() {
             </Button>
           </Box>
 
-          <TableContainer component={Paper} sx={{ mt: 2 }}>
+          <TableContainer
+            component={Paper}
+            sx={{ mt: 2, flex: 1, minHeight: 0 }}
+          >
             <Table sx={{ minWidth: 650 }} aria-label="users table">
               <TableHead>
                 <TableRow>
@@ -337,6 +382,7 @@ export default function Usuarios() {
         onClose={() => {
           setCreateOpen(false);
           setCreateError('');
+          setShowNewPassword(false);
         }}
         fullWidth
         maxWidth="sm"
@@ -345,14 +391,13 @@ export default function Usuarios() {
         <DialogContent
           sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
         >
-          {createError && (
-            <Chip label={createError} color="error" variant="outlined" />
-          )}
+          {createError && <Alert severity="error">{createError}</Alert>}
           <TextField
             label="Nome de Usuário"
             fullWidth
             value={newUsername}
             onChange={e => setNewUsername(e.target.value)}
+            helperText="Obrigatório"
             sx={{ mt: 1 }}
           />
           <TextField
@@ -361,13 +406,42 @@ export default function Usuarios() {
             fullWidth
             value={newEmail}
             onChange={e => setNewEmail(e.target.value)}
+            error={newEmail.length > 0 && !isCreateEmailValid}
+            helperText={
+              newEmail.length > 0 && !isCreateEmailValid
+                ? 'Email incompleto ou inválido.'
+                : 'Obrigatório'
+            }
           />
           <TextField
             label="Senha"
-            type="password"
+            type={showNewPassword ? 'text' : 'password'}
             fullWidth
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
+            error={newPassword.length > 0 && !isCreatePasswordValid}
+            helperText={
+              newPassword.length > 0 && !isCreatePasswordValid
+                ? 'A senha deve ter pelo menos 6 caracteres.'
+                : 'Obrigatório'
+            }
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      onClick={() => setShowNewPassword(prev => !prev)}
+                      aria-label={
+                        showNewPassword ? 'Ocultar senha' : 'Mostrar senha'
+                      }
+                    >
+                      {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
           />
           <FormControlLabel
             control={
@@ -393,6 +467,7 @@ export default function Usuarios() {
             onClick={handleCreateSave}
             variant="contained"
             color="primary"
+            disabled={isCreateDisabled}
           >
             Criar
           </Button>
@@ -405,6 +480,8 @@ export default function Usuarios() {
         onClose={() => {
           setResetUser(null);
           setResetError('');
+          setShowResetPassword(false);
+          setShowResetPasswordConfirm(false);
         }}
         fullWidth
         maxWidth="sm"
@@ -413,33 +490,71 @@ export default function Usuarios() {
         <DialogContent
           sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
         >
-          {resetError && (
-            <Chip label={resetError} color="error" variant="outlined" />
-          )}
+          {resetError && <Alert severity="error">{resetError}</Alert>}
           <TextField
             label="Nova Senha"
-            type="password"
+            type={showResetPassword ? 'text' : 'password'}
             fullWidth
             value={resetPassword}
             onChange={e => setResetPassword(e.target.value)}
+            error={isResetPasswordTooShort}
+            helperText={
+              isResetPasswordTooShort
+                ? 'A senha deve ter pelo menos 6 caracteres.'
+                : 'Obrigatório'
+            }
             sx={{ mt: 1 }}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      onClick={() => setShowResetPassword(prev => !prev)}
+                      aria-label={
+                        showResetPassword ? 'Ocultar senha' : 'Mostrar senha'
+                      }
+                    >
+                      {showResetPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
           />
           <TextField
             label="Confirmar Nova Senha"
-            type="password"
+            type={showResetPasswordConfirm ? 'text' : 'password'}
             fullWidth
             value={resetPasswordConfirm}
             onChange={e => setResetPasswordConfirm(e.target.value)}
-            error={
-              resetPasswordConfirm.length > 0 &&
-              resetPassword !== resetPasswordConfirm
-            }
+            error={isResetMismatch}
             helperText={
-              resetPasswordConfirm.length > 0 &&
-              resetPassword !== resetPasswordConfirm
-                ? 'As senhas não coincidem'
-                : ''
+              isResetMismatch ? 'As senhas não coincidem' : 'Obrigatório'
             }
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      onClick={() => setShowResetPasswordConfirm(prev => !prev)}
+                      aria-label={
+                        showResetPasswordConfirm
+                          ? 'Ocultar confirmação de senha'
+                          : 'Mostrar confirmação de senha'
+                      }
+                    >
+                      {showResetPasswordConfirm ? (
+                        <VisibilityOff />
+                      ) : (
+                        <Visibility />
+                      )}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
           />
         </DialogContent>
         <DialogActions>
@@ -456,7 +571,7 @@ export default function Usuarios() {
             onClick={handleResetPassword}
             variant="contained"
             color="warning"
-            disabled={!resetPassword || resetPassword !== resetPasswordConfirm}
+            disabled={isResetDisabled}
           >
             Confirmar
           </Button>

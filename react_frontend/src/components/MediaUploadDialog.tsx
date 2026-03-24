@@ -59,6 +59,9 @@ export default function MediaUploadDialog({
   const [schedule, setSchedule] = React.useState<Schedule>(DEFAULT_SCHEDULE);
   const [fileError, setFileError] = React.useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const isInvalidImageDuration = type === 'image' && durationMs <= 0;
+  const isSaveDisabled =
+    !file || Boolean(fileError) || !title.trim() || isInvalidImageDuration;
 
   React.useEffect(() => {
     if (open) {
@@ -69,6 +72,17 @@ export default function MediaUploadDialog({
       setFileError('');
     }
   }, [open, type]);
+
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFilePickerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openFilePicker();
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0] ?? null;
@@ -106,7 +120,11 @@ export default function MediaUploadDialog({
   };
 
   const handleSave = () => {
-    onSave({ file, title, durationMs, schedule });
+    if (!file || !title.trim() || isInvalidImageDuration || fileError) {
+      return;
+    }
+
+    onSave({ file, title: title.trim(), durationMs, schedule });
   };
 
   return (
@@ -126,7 +144,10 @@ export default function MediaUploadDialog({
 
         {/* Upload area */}
         <Box
-          onClick={() => fileInputRef.current?.click()}
+          onClick={openFilePicker}
+          role="button"
+          tabIndex={0}
+          onKeyDown={handleFilePickerKeyDown}
           sx={{
             mt: 1,
             border: '2px dashed',
@@ -175,6 +196,7 @@ export default function MediaUploadDialog({
           fullWidth
           value={title}
           onChange={e => setTitle(e.target.value)}
+          helperText="Obrigatório"
         />
 
         {type === 'image' && (
@@ -184,7 +206,12 @@ export default function MediaUploadDialog({
             fullWidth
             value={durationMs}
             onChange={e => setDurationMs(Number(e.target.value))}
-            helperText="Tempo que a imagem ficará na tela (padrão: 10000ms = 10s)"
+            error={isInvalidImageDuration}
+            helperText={
+              isInvalidImageDuration
+                ? 'Informe uma duração maior que zero.'
+                : 'Tempo que a imagem ficará na tela (padrão: 10000ms = 10s)'
+            }
           />
         )}
 
@@ -204,7 +231,7 @@ export default function MediaUploadDialog({
           onClick={handleSave}
           variant="contained"
           color="primary"
-          disabled={!file || Boolean(fileError)}
+          disabled={isSaveDisabled}
         >
           Enviar
         </Button>
