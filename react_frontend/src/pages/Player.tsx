@@ -2,7 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { getHomePath } from '../auth';
+import { getHomePath, getSessionUser } from '../auth';
+
+type Schedule = {
+  days: string[];
+  start: string;
+  end: string;
+  tz: string;
+};
 
 type PlayerMediaItem = {
   id: number;
@@ -11,6 +18,7 @@ type PlayerMediaItem = {
   fileUrl: string;
   durationMs: number;
   createdAt: string;
+  schedule?: Schedule;
 };
 
 type HtmlItem = {
@@ -19,6 +27,7 @@ type HtmlItem = {
   fileType: 'aviso' | 'contador';
   htmlUrl: string;
   createdAt: string;
+  schedule?: Schedule;
 };
 
 type PlaylistItem = {
@@ -32,6 +41,105 @@ type PlaylistItem = {
 
 const FALLBACK_IMAGE_DURATION_MS = 10000;
 const FALLBACK_HTML_DURATION_MS = 15000;
+const DEFAULT_TIMEZONE = 'America/Sao_Paulo';
+
+const WEEKDAY_MAP: Record<string, string> = {
+  sun: 'sun',
+  mon: 'mon',
+  tue: 'tue',
+  wed: 'wed',
+  thu: 'thu',
+  fri: 'fri',
+  sat: 'sat',
+};
+
+function parseTimeToMinutes(input: string, fallback: number) {
+  const match = String(input || '').match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) {
+    return fallback;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return fallback;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function getCurrentDayAndMinutes(timeZone?: string) {
+  const now = new Date();
+
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone || DEFAULT_TIMEZONE,
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(now);
+
+    const weekday = parts.find(part => part.type === 'weekday')?.value;
+    const hour = Number(parts.find(part => part.type === 'hour')?.value ?? NaN);
+    const minute = Number(
+      parts.find(part => part.type === 'minute')?.value ?? NaN,
+    );
+
+    if (!weekday || Number.isNaN(hour) || Number.isNaN(minute)) {
+      throw new Error('Could not parse date parts');
+    }
+
+    const dayKey = WEEKDAY_MAP[weekday.toLowerCase().slice(0, 3)] || 'sun';
+    return {
+      dayKey,
+      minutes: hour * 60 + minute,
+    };
+  } catch {
+    const fallbackDay = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][
+      now.getDay()
+    ];
+    return {
+      dayKey: fallbackDay,
+      minutes: now.getHours() * 60 + now.getMinutes(),
+    };
+  }
+}
+
+function isScheduleActive(schedule?: Schedule) {
+  if (!schedule) {
+    return true;
+  }
+
+  const { dayKey, minutes } = getCurrentDayAndMinutes(schedule.tz);
+  const validDays = Array.isArray(schedule.days)
+    ? schedule.days.map(day => String(day).toLowerCase())
+    : [];
+
+  if (validDays.length > 0 && !validDays.includes(dayKey)) {
+    return false;
+  }
+
+  const startMinutes = parseTimeToMinutes(schedule.start, 0);
+  const endMinutes = parseTimeToMinutes(schedule.end, 23 * 60 + 59);
+
+  if (startMinutes === endMinutes) {
+    return true;
+  }
+
+  if (startMinutes < endMinutes) {
+    return minutes >= startMinutes && minutes <= endMinutes;
+  }
+
+  return minutes >= startMinutes || minutes <= endMinutes;
+}
 
 function normalizeMediaUrl(url: string) {
   if (/^https?:\/\//i.test(url)) {
@@ -55,6 +163,8 @@ function normalizeMediaUrl(url: string) {
 
 export default function Player() {
   const navigate = useNavigate();
+  const sessionUser = getSessionUser();
+  const exitPath = sessionUser ? getHomePath(sessionUser) : '/login';
   const [playlistItems, setPlaylistItems] = useState<PlaylistItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -67,7 +177,7 @@ export default function Player() {
         return;
       }
 
-      navigate(getHomePath(), { replace: true });
+      navigate(exitPath, { replace: true });
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -75,7 +185,7 @@ export default function Player() {
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [navigate]);
+  }, [exitPath, navigate]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -110,6 +220,7 @@ export default function Player() {
 
       const normalizedMediaItems: PlaylistItem[] = mediaData
         .filter(item => item.fileType === 'image' || item.fileType === 'video')
+        .filter(item => isScheduleActive(item.schedule))
         .map(item => ({
           id: item.id,
           title: item.title,
@@ -126,6 +237,7 @@ export default function Player() {
         .filter(
           item => item.fileType === 'aviso' || item.fileType === 'contador',
         )
+        .filter(item => isScheduleActive(item.schedule))
         .map(item => ({
           id: item.id,
           title: item.title,
@@ -212,7 +324,7 @@ export default function Player() {
             '& .MuiAlert-icon': { color: 'grey.100' },
           }}
         >
-          Pressione ESC para voltar ao painel
+          Pressione ESC para sair do player
         </Alert>
       )}
 
@@ -271,24 +383,6 @@ export default function Player() {
             sx={{ width: '100%', height: '100%', border: 0 }}
           />
         )}
-
-      {!loading && playlistItems.length > 1 && (
-        <Box
-          sx={{
-            position: 'absolute',
-            right: 16,
-            bottom: 16,
-            px: 1.5,
-            py: 0.75,
-            borderRadius: 1,
-            bgcolor: 'rgba(0,0,0,0.55)',
-          }}
-        >
-          <Typography variant="body2" color="grey.100">
-            Item {currentIndex + 1} de {playlistItems.length}
-          </Typography>
-        </Box>
-      )}
     </Box>
   );
 }

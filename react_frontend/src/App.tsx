@@ -60,14 +60,7 @@ function App() {
             </AdminRoute>
           }
         />
-        <Route
-          path="/player"
-          element={
-            <ProtectedRoute>
-              <Player />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/player" element={<Player />} />
         <Route path="*" element={<DashboardRedirect />} />
       </Routes>
     </BrowserRouter>

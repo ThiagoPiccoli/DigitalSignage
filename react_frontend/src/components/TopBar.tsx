@@ -3,8 +3,9 @@ import Toolbar from '@mui/material/Toolbar';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
+import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { clearSession, getHomePath, getSessionUser } from '../auth';
 
@@ -14,69 +15,109 @@ interface TopBarProps {
 
 export default function TopBar({ username = 'Thiago Piccoli' }: TopBarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const sessionUser = getSessionUser();
   const displayName = sessionUser?.username ?? username;
+  const homePath = getHomePath(sessionUser);
+  const showBackButton = location.pathname !== homePath;
 
   return (
     <AppBar position="sticky" sx={{ bgcolor: 'primary.main' }}>
-      <Toolbar sx={{ gap: 1 }}>
-        <Box
-          onClick={() => navigate(getHomePath(sessionUser))}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            cursor: 'pointer',
-            '&:hover': { opacity: 0.85 },
-          }}
-        >
-          <Avatar
-            alt="CdTec"
-            src="/logo_ufpel.png"
-            variant="square"
-            sx={{ width: 85, height: 85 }}
-          />
+      <Toolbar sx={{ gap: 2, minHeight: 88 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {showBackButton && (
+            <Button
+              onClick={() => navigate(homePath)}
+              variant="outlined"
+              color="inherit"
+              size="large"
+              startIcon={<ArrowBackRounded />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: 'rgba(255,255,255,0.35)',
+                bgcolor: 'rgba(255,255,255,0.08)',
+                px: 1.8,
+                '&:hover': {
+                  borderColor: 'rgba(255,255,255,0.65)',
+                  bgcolor: 'rgba(255,255,255,0.16)',
+                },
+              }}
+            >
+              Voltar
+            </Button>
+          )}
+
           <Box
-            component="span"
+            onClick={() => navigate(getHomePath(sessionUser))}
             sx={{
-              fontWeight: 'bold',
-              fontSize: '1.5rem',
-              color: 'inherit',
-              fontFamily: 'sans-serif',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              cursor: 'pointer',
+              pl: showBackButton ? 1.5 : 0,
+              borderLeft: showBackButton
+                ? '1px solid rgba(255,255,255,0.25)'
+                : 'none',
+              '&:hover': { opacity: 0.9 },
             }}
           >
-            Mural Digital
+            <Avatar
+              alt="CdTec"
+              src="/logo_ufpel.png"
+              variant="square"
+              sx={{ width: 72, height: 72 }}
+            />
+            <Box
+              component="span"
+              sx={{
+                fontWeight: 'bold',
+                fontSize: '1.35rem',
+                color: 'inherit',
+                fontFamily: 'sans-serif',
+                display: { xs: 'none', sm: 'inline' },
+              }}
+            >
+              Mural Digital
+            </Box>
           </Box>
         </Box>
 
-        <div style={{ flexGrow: 1 }} />
+        <Box sx={{ flexGrow: 1 }} />
 
-        <Button
-          onClick={() => navigate('/perfil')}
-          variant="outlined"
-          color="inherit"
-          size="large"
-          sx={{
-            textTransform: 'none',
-            fontWeight: 'bold',
-            borderColor: 'white',
-          }}
-        >
-          {displayName}
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            onClick={() => navigate('/perfil')}
+            variant="outlined"
+            color="inherit"
+            size="large"
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderColor: 'rgba(255,255,255,0.35)',
+              bgcolor: 'rgba(255,255,255,0.08)',
+              '&:hover': {
+                borderColor: 'rgba(255,255,255,0.65)',
+                bgcolor: 'rgba(255,255,255,0.16)',
+              },
+            }}
+          >
+            {displayName}
+          </Button>
 
-        <Button
-          onClick={() => {
-            clearSession();
-            navigate('/login');
-          }}
-          variant="contained"
-          color="secondary"
-          size="large"
-          sx={{ textTransform: 'none', fontWeight: 'bold' }}
-        >
-          Sair
-        </Button>
+          <Button
+            onClick={() => {
+              clearSession();
+              navigate('/login');
+            }}
+            variant="contained"
+            color="secondary"
+            size="large"
+            sx={{ textTransform: 'none', fontWeight: 700, px: 2.25 }}
+          >
+            Sair
+          </Button>
+        </Box>
       </Toolbar>
     </AppBar>
   );

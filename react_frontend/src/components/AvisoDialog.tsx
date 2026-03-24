@@ -13,7 +13,13 @@ import ScheduleFields, {
   type Schedule,
 } from './ScheduleFields';
 
-export type AvisoRow = { nome: string; aviso: string; schedule: Schedule };
+export type AvisoRow = {
+  nome: string;
+  aviso: string;
+  schedule: Schedule;
+  textColor: string;
+  bgColor: string;
+};
 
 interface AvisoDialogProps {
   row: AvisoRow | null;
@@ -30,7 +36,14 @@ export default function AvisoDialog({
 
   React.useEffect(() => {
     setValues(
-      row ? { ...row, schedule: row.schedule ?? DEFAULT_SCHEDULE } : null,
+      row
+        ? {
+            ...row,
+            schedule: row.schedule ?? DEFAULT_SCHEDULE,
+            textColor: row.textColor || '#ffffff',
+            bgColor: row.bgColor || '#000000',
+          }
+        : null,
     );
   }, [row]);
 
@@ -60,6 +73,26 @@ export default function AvisoDialog({
           value={values?.aviso ?? ''}
           onChange={handleChange('aviso')}
         />
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField
+            label="Cor do texto"
+            fullWidth
+            type="color"
+            value={values?.textColor ?? '#ffffff'}
+            onChange={handleChange('textColor')}
+            helperText="Cor principal do texto"
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+          <TextField
+            label="Cor de fundo"
+            fullWidth
+            type="color"
+            value={values?.bgColor ?? '#000000'}
+            onChange={handleChange('bgColor')}
+            helperText="Cor de fundo do HTML"
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+        </Box>
         {values && (
           <Box sx={{ mt: 1 }}>
             <ScheduleFields

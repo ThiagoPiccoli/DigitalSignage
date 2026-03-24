@@ -17,6 +17,8 @@ export type ContadorRow = {
   nome: string;
   deadlineISO: string;
   schedule: Schedule;
+  textColor: string;
+  bgColor: string;
 };
 
 interface ContadorDialogProps {
@@ -34,7 +36,14 @@ export default function ContadorDialog({
 
   React.useEffect(() => {
     setValues(
-      row ? { ...row, schedule: row.schedule ?? DEFAULT_SCHEDULE } : null,
+      row
+        ? {
+            ...row,
+            schedule: row.schedule ?? DEFAULT_SCHEDULE,
+            textColor: row.textColor || '#ffffff',
+            bgColor: row.bgColor || '#000000',
+          }
+        : null,
     );
   }, [row]);
 
@@ -64,6 +73,26 @@ export default function ContadorDialog({
           onChange={handleChange('deadlineISO')}
           slotProps={{ inputLabel: { shrink: true } }}
         />
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField
+            label="Cor do texto"
+            fullWidth
+            type="color"
+            value={values?.textColor ?? '#ffffff'}
+            onChange={handleChange('textColor')}
+            helperText="Cor principal do contador"
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+          <TextField
+            label="Cor de fundo"
+            fullWidth
+            type="color"
+            value={values?.bgColor ?? '#000000'}
+            onChange={handleChange('bgColor')}
+            helperText="Cor de fundo do HTML"
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+        </Box>
         {values && (
           <Box sx={{ mt: 1 }}>
             <ScheduleFields

@@ -48,6 +48,26 @@ const ACCEPT_MAP: Record<string, string> = {
     'image/png,image/jpeg,image/jpg,image/gif,image/webp,image/bmp,image/svg+xml,.jpg,.jpeg',
 };
 
+function normalizeMediaUrl(url: string) {
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url);
+      const isLocalHost =
+        parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+
+      if (isLocalHost) {
+        parsed.hostname = window.location.hostname;
+      }
+
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  }
+
+  return `http://${window.location.hostname}:3333${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
   const [nome, setNome] = React.useState('');
   const [aviso, setAviso] = React.useState('');
@@ -124,7 +144,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
             {row?.mediaUrl && row.tipo === 'Imagem' && (
               <Box
                 component="img"
-                src={row.mediaUrl}
+                src={normalizeMediaUrl(row.mediaUrl)}
                 alt={row.nome}
                 sx={{
                   width: '100%',
@@ -140,7 +160,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
             {row?.mediaUrl && row.tipo === 'Vídeo' && (
               <Box
                 component="video"
-                src={row.mediaUrl}
+                src={normalizeMediaUrl(row.mediaUrl)}
                 controls
                 muted
                 sx={{

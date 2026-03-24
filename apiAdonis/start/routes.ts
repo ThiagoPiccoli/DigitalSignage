@@ -47,8 +47,8 @@ router.get('/media/:filename', [MediaController, 'show'])
 //Player routes
 router.post('/player', [PlayerController, 'upload']).use(middleware.auth()) // Testado
 router.put('/player/:id', [PlayerController, 'updateMedia']).use(middleware.auth()) //Testado
-router.get('/player', [PlayerController, 'index']).use(middleware.auth()) // Testado
-router.get('/player/:id', [PlayerController, 'show']).use(middleware.auth()) //Testado
+router.get('/player', [PlayerController, 'index']) // Public for signage playback
+router.get('/player/:id', [PlayerController, 'show']) // Public for signage playback
 router.delete('/player/:id', [PlayerController, 'destroy']).use(middleware.auth()) //Testado
 
 //HTML Player routes
@@ -56,6 +56,6 @@ router.post('/html', [HtmlController, 'createHtml']).use(middleware.auth()) // T
 router.post('/html/deadline', [HtmlController, 'createDeadline']).use(middleware.auth()) //Testado
 router.post('/html/duplicate/:id', [HtmlController, 'duplicateHtml']).use(middleware.auth()) //Testado
 router.put('/html/:id', [HtmlController, 'updateHtml']).use(middleware.auth()) // Testado
-router.get('/html', [HtmlController, 'index']).use(middleware.auth()) //Testado
-router.get('/html/:id', [HtmlController, 'show']).use(middleware.auth()) //Testado
+router.get('/html', [HtmlController, 'index']) // Public for signage playback
+router.get('/html/:id', [HtmlController, 'show']) // Public for signage playback
 router.delete('/html/:id', [HtmlController, 'destroy']).use(middleware.auth()) //Testado

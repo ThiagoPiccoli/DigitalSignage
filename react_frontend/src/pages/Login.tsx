@@ -108,6 +108,18 @@ export default function Login() {
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </Button>
+
+        <Button
+          type="button"
+          size="medium"
+          variant="outlined"
+          color="primary"
+          fullWidth
+          onClick={() => navigate('/player')}
+          sx={{ textTransform: 'none' }}
+        >
+          Abrir Player (sem login)
+        </Button>
       </Box>
     </Box>
   );
