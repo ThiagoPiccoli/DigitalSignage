@@ -3,7 +3,7 @@ import User from '#models/user'
 import hash from '@adonisjs/core/services/hash'
 
 export default class PasswordsController {
-  public async changePassword({ request, response, bouncer, params }: HttpContext) {
+  public async changePassword({ request, response, params }: HttpContext) {
     const { oldPassword, newPassword, confirmPassword } = request.only([
       'oldPassword',
       'newPassword',

@@ -7,7 +7,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import { getHomePath } from '../auth';
 
@@ -96,6 +96,8 @@ function normalizeMediaUrl(url: string) {
 
 export default function Player() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEmbedMode = searchParams.get('embed') === '1';
   const [playlistItems, setPlaylistItems] = useState<PlaylistItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -260,10 +262,10 @@ export default function Player() {
   }, [currentIndex, defaults.mute, defaults.volume]);
 
   useEffect(() => {
-    if (!loading && !error) {
+    if (!loading && !error && !isEmbedMode) {
       setShowEscHint(true);
     }
-  }, [loading, error]);
+  }, [loading, error, isEmbedMode]);
 
   const currentItem = useMemo(
     () => playlistItems[currentIndex],
@@ -354,7 +356,7 @@ export default function Player() {
         )}
 
       <Snackbar
-        open={!loading && !error && showEscHint}
+        open={!loading && !error && !isEmbedMode && showEscHint}
         autoHideDuration={3200}
         onClose={() => setShowEscHint(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}

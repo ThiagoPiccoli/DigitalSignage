@@ -582,7 +582,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   };
 
   return (
-    <Box>
+    <Box sx={{ height: '100%', overflowY: 'auto', overflowX: 'hidden', pb: 2 }}>
       <TopBar />
 
       <Container
@@ -635,10 +635,18 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
           </Paper>
         )}
 
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'stretch' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1.5,
+            alignItems: 'stretch',
+            flexDirection: { xs: 'column', lg: 'row' },
+          }}
+        >
           <Paper
             elevation={10}
             sx={{
+              order: { xs: 2, lg: 1 },
               flex: 1,
               p: 2,
               borderRadius: 3,
@@ -790,11 +798,19 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
 
           <Box
             sx={{
-              width: { xs: 240, md: 280 },
-              height: adminMode ? '75vh' : 'calc(100vh - 104px)',
-              display: { xs: 'none', lg: 'flex' },
-              flexDirection: 'column',
+              order: { xs: 1, lg: 2 },
+              width: { xs: '100%', lg: 280 },
+              height: {
+                xs: 'auto',
+                lg: adminMode ? '75vh' : 'calc(100vh - 104px)',
+              },
+              display: 'flex',
+              flexDirection: { xs: 'row', lg: 'column' },
               gap: 1.5,
+              '& > .MuiPaper-root': {
+                flex: { xs: 1, lg: 'initial' },
+                minWidth: 0,
+              },
             }}
           >
             <Paper
@@ -991,7 +1007,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         anchorEl={fileTypeAnchor}
         onClose={() => setFileTypeAnchor(null)}
         placement="bottom-start"
-        width={300}
         items={[
           {
             label: 'Aviso',

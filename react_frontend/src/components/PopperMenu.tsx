@@ -5,7 +5,6 @@ interface PopperMenuProps {
   onClose: () => void;
   items: { label: string; onClick?: () => void }[];
   placement?: 'bottom-start' | 'bottom-end';
-  width?: number;
 }
 
 export default function PopperMenu({
@@ -13,7 +12,6 @@ export default function PopperMenu({
   onClose,
   items,
   placement = 'bottom-end',
-  width = 160,
 }: PopperMenuProps) {
   if (!anchorEl) return null;
 
@@ -25,7 +23,7 @@ export default function PopperMenu({
       style={{ zIndex: 1300 }}
     >
       <ClickAwayListener onClickAway={onClose}>
-        <Paper sx={{ p: 1, mt: 1, width }}>
+        <Paper sx={{ p: 1, mt: 1, width: anchorEl.clientWidth }}>
           {items.map(({ label, onClick }) => (
             <Button
               key={label}
