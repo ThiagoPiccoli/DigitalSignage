@@ -1,0 +1,53 @@
+# ─── Fly.io configuration ────────────────────────────────────────────────────
+# See https://fly.io/docs/reference/configuration/
+
+app = 'digitalsignage-api'
+primary_region = 'gru'           # São Paulo — closest to Brazil
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  NODE_ENV  = 'production'
+  HOST      = '0.0.0.0'
+  PORT      = '3333'
+  LOG_LEVEL = 'info'
+  TZ        = 'UTC'
+
+[http_service]
+  internal_port  = 3333
+  force_https    = true
+  auto_stop_machines  = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type       = 'connections'
+    hard_limit = 250
+    soft_limit = 200
+
+# Persistent volume for SQLite database + uploaded media files
+[mounts]
+  source      = 'digitalsignage_data'
+  destination = '/app/data'
+
+# Health check so Fly knows the app is alive
+[[services]]
+  protocol = 'tcp'
+  internal_port = 3333
+
+  [[services.ports]]
+    port     = 80
+    handlers = ['http']
+
+  [[services.ports]]
+    port     = 443
+    handlers = ['tls', 'http']
+
+  [[services.http_checks]]
+    interval = 10000
+    grace_period = '10s'
+    method   = 'GET'
+    path     = '/manifest'
+    protocol = 'http'
+    timeout  = 2000

@@ -9,7 +9,6 @@ export default class AdminMiddleware {
       return response.forbidden({ message: 'Access denied. Admin privileges required.' })
     }
 
-    console.log('User is admin, proceeding')
     await next()
   }
 }

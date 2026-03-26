@@ -10,6 +10,8 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import { getHomePath } from '../auth';
+import type { Schedule } from '../components/ScheduleFields';
+import { isScheduleActive } from '../scheduleUtils';
 
 type PlayerMediaItem = {
   id: number;
@@ -18,6 +20,7 @@ type PlayerMediaItem = {
   fileUrl: string;
   durationMs: number;
   createdAt: string;
+  schedule?: Schedule;
 };
 
 type HtmlItem = {
@@ -26,6 +29,7 @@ type HtmlItem = {
   fileType: 'aviso' | 'contador';
   htmlUrl: string;
   createdAt: string;
+  schedule?: Schedule;
 };
 
 type PlaylistItem = {
@@ -184,6 +188,7 @@ export default function Player() {
 
       const normalizedMediaItems: PlaylistItem[] = mediaData
         .filter(item => item.fileType === 'image' || item.fileType === 'video')
+        .filter(item => isScheduleActive(item.schedule))
         .map(item => ({
           id: item.id,
           title: item.title,
@@ -200,6 +205,7 @@ export default function Player() {
         .filter(
           item => item.fileType === 'aviso' || item.fileType === 'contador',
         )
+        .filter(item => isScheduleActive(item.schedule))
         .map(item => ({
           id: item.id,
           title: item.title,
@@ -226,6 +232,15 @@ export default function Player() {
 
   useEffect(() => {
     loadContent();
+
+    // Re-evaluate schedules every 60 seconds
+    const intervalId = window.setInterval(() => {
+      loadContent();
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, [loadContent]);
 
   useEffect(() => {

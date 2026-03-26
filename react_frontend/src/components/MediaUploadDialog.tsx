@@ -55,11 +55,11 @@ export default function MediaUploadDialog({
 }: MediaUploadDialogProps) {
   const [file, setFile] = React.useState<File | null>(null);
   const [title, setTitle] = React.useState('');
-  const [durationMs, setDurationMs] = React.useState(10000);
+  const [durationSec, setDurationSec] = React.useState(10);
   const [schedule, setSchedule] = React.useState<Schedule>(DEFAULT_SCHEDULE);
   const [fileError, setFileError] = React.useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const isInvalidImageDuration = type === 'image' && durationMs <= 0;
+  const isInvalidImageDuration = type === 'image' && durationSec <= 0;
   const isSaveDisabled =
     !file || Boolean(fileError) || !title.trim() || isInvalidImageDuration;
 
@@ -67,7 +67,7 @@ export default function MediaUploadDialog({
     if (open) {
       setFile(null);
       setTitle('');
-      setDurationMs(type === 'video' ? 0 : 10000);
+      setDurationSec(type === 'video' ? 0 : 10);
       setSchedule(DEFAULT_SCHEDULE);
       setFileError('');
     }
@@ -124,7 +124,12 @@ export default function MediaUploadDialog({
       return;
     }
 
-    onSave({ file, title: title.trim(), durationMs, schedule });
+    onSave({
+      file,
+      title: title.trim(),
+      durationMs: durationSec * 1000,
+      schedule,
+    });
   };
 
   return (
@@ -201,16 +206,16 @@ export default function MediaUploadDialog({
 
         {type === 'image' && (
           <TextField
-            label="Duração de exibição (ms)"
+            label="Duração de exibição (s)"
             type="number"
             fullWidth
-            value={durationMs}
-            onChange={e => setDurationMs(Number(e.target.value))}
+            value={durationSec}
+            onChange={e => setDurationSec(Number(e.target.value))}
             error={isInvalidImageDuration}
             helperText={
               isInvalidImageDuration
                 ? 'Informe uma duração maior que zero.'
-                : 'Tempo que a imagem ficará na tela (padrão: 10000ms = 10s)'
+                : 'Tempo que a imagem ficará na tela em segundos (padrão: 10s)'
             }
           />
         )}

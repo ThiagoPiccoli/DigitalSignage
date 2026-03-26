@@ -1,6 +1,7 @@
 import { clearSession, getAuthToken } from './auth';
 
-const BASE_URL = `http://${window.location.hostname}:3333`;
+const BASE_URL =
+  process.env.REACT_APP_API_URL || `http://${window.location.hostname}:3333`;
 
 export async function api(path: string, options: RequestInit = {}) {
   const token = getAuthToken();

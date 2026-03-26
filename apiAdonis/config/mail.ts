@@ -6,12 +6,12 @@ export default defineConfig({
 
   mailers: {
     smtp: transports.smtp({
-      host: 'sandbox.smtp.mailtrap.io',
-      port: 2525,
+      host: env.get('SMTP_HOST'),
+      port: Number(env.get('SMTP_PORT')),
       auth: {
         type: 'login',
-        user: '3aa43ff05dd103',
-        pass: 'cfc5bea25bed5a',
+        user: env.get('SMTP_USERNAME') ?? '',
+        pass: env.get('SMTP_PASSWORD') ?? '',
       },
     }),
   },

@@ -6,7 +6,7 @@ import * as path from 'node:path'
 
 export default class MediaService {
   private static get MEDIA_DIR() {
-    return app.publicPath('media')
+    return process.env.MEDIA_PATH || app.publicPath('media')
   }
 
   private static ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']
@@ -57,10 +57,23 @@ export default class MediaService {
 
   static sanitizeUserHtml(input: string = ''): string {
     let out = String(input)
+    // Remove script tags (including self-closing and malformed)
     out = out.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-    out = out.replace(/\son\w+="[^"]*"/gi, '')
-    out = out.replace(/\son\w+='[^']*'/gi, '')
-    out = out.replace(/\son\w+=\S+/gi, '')
+    out = out.replace(/<script[\s\S]*?\/?>/gi, '')
+    // Remove other dangerous tags
+    out = out.replace(/<\/?(?:iframe|object|embed|form|link|meta|base)[\s\S]*?\/?>/gi, '')
+    // Remove all on* event handler attributes (quoted, unquoted, backtick)
+    out = out.replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+    out = out.replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+    out = out.replace(/\son\w+\s*=\s*`[^`]*`/gi, '')
+    out = out.replace(/\son\w+\s*=\s*[^\s>"']+/gi, '')
+    // Remove javascript: and data: URIs in href/src/action attributes
+    out = out.replace(/(href|src|action)\s*=\s*"javascript\s*:[^"]*"/gi, '$1=""')
+    out = out.replace(/(href|src|action)\s*=\s*'javascript\s*:[^']*'/gi, "$1=''")
+    out = out.replace(/(href|src|action)\s*=\s*javascript\s*:[^\s>]*/gi, '$1=""')
+    out = out.replace(/(href|src|action)\s*=\s*"data\s*:[^"]*"/gi, '$1=""')
+    out = out.replace(/(href|src|action)\s*=\s*'data\s*:[^']*'/gi, "$1=''")
+    out = out.replace(/(href|src|action)\s*=\s*data\s*:[^\s>]*/gi, '$1=""')
     return out
   }
 
@@ -89,15 +102,20 @@ export default class MediaService {
   static async deleteFile(filename: string): Promise<void> {
     const sanitized = this.sanitizeFilename(filename)
     if (!sanitized) throw new Error('Invalid filename')
+    const resolvedPath = this.safeResolvePath(sanitized)
+    await fs.unlink(resolvedPath)
+  }
 
-    const filePath = path.join(this.MEDIA_DIR, sanitized)
+  /**
+   * Resolve a filename inside MEDIA_DIR and guard against path traversal.
+   */
+  private static safeResolvePath(sanitizedFilename: string): string {
+    const filePath = path.join(this.MEDIA_DIR, sanitizedFilename)
     const resolvedPath = path.resolve(filePath)
-
     if (!resolvedPath.startsWith(path.resolve(this.MEDIA_DIR))) {
       throw new Error('Path traversal detected')
     }
-
-    await fs.unlink(resolvedPath)
+    return resolvedPath
   }
 
   static async listMediaFiles(): Promise<string[]> {
@@ -111,9 +129,9 @@ export default class MediaService {
   static async fileExists(filename: string): Promise<boolean> {
     const sanitized = this.sanitizeFilename(filename)
     if (!sanitized) return false
-    const filePath = path.join(this.MEDIA_DIR, sanitized)
+    const resolvedPath = this.safeResolvePath(sanitized)
     try {
-      await fs.access(filePath)
+      await fs.access(resolvedPath)
       return true
     } catch {
       return false
@@ -123,16 +141,16 @@ export default class MediaService {
   static async readFile(filename: string): Promise<string> {
     const sanitized = this.sanitizeFilename(filename)
     if (!sanitized) throw new Error('Invalid filename')
-    const filePath = path.join(this.MEDIA_DIR, sanitized)
-    return await fs.readFile(filePath, 'utf8')
+    const resolvedPath = this.safeResolvePath(sanitized)
+    return await fs.readFile(resolvedPath, 'utf8')
   }
 
   static async writeFile(filename: string, content: string): Promise<void> {
     await this.ensureMediaDir()
     const sanitized = this.sanitizeFilename(filename)
     if (!sanitized) throw new Error('Invalid filename')
-    const filePath = path.join(this.MEDIA_DIR, sanitized)
-    await fs.writeFile(filePath, content, 'utf8')
+    const resolvedPath = this.safeResolvePath(sanitized)
+    await fs.writeFile(resolvedPath, content, 'utf8')
   }
 
   static async copyFile(src: string, dest: string): Promise<void> {
@@ -140,8 +158,8 @@ export default class MediaService {
     const destSanitized = this.sanitizeFilename(dest)
     if (!srcSanitized || !destSanitized) throw new Error('Invalid filename')
 
-    const srcPath = path.join(this.MEDIA_DIR, srcSanitized)
-    const destPath = path.join(this.MEDIA_DIR, destSanitized)
+    const srcPath = this.safeResolvePath(srcSanitized)
+    const destPath = this.safeResolvePath(destSanitized)
     await fs.copyFile(srcPath, destPath)
   }
 

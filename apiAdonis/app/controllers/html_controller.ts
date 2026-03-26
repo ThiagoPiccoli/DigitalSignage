@@ -4,6 +4,21 @@ import MediaService from '../services/media_service.js'
 
 const DEFAULT_HTML_PADDING = 24
 const DEFAULT_HTML_MAX_WIDTH = 1200
+
+/** Strip characters that could break out of a CSS value context */
+function sanitizeCssValue(value: string): string {
+  return String(value).replace(/[{}<>;@\\]/g, '')
+}
+
+/** Validate a CSS color value (hex, rgb, rgba, hsl, hsla, or named color) */
+function sanitizeCssColor(value: string, fallback: string): string {
+  const s = String(value).trim()
+  if (/^#[0-9a-fA-F]{3,8}$/.test(s)) return s
+  if (/^(rgb|rgba|hsl|hsla)\([^){};<>@]+\)$/.test(s)) return s
+  if (/^[a-zA-Z]{1,30}$/.test(s)) return s
+  return fallback
+}
+
 const DEFAULT_SCHEDULE = {
   days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
   start: '00:00',
@@ -65,6 +80,10 @@ export default class HtmlController {
       ? String(textAlign).toLowerCase()
       : 'center'
 
+    const safeBg = sanitizeCssColor(bgColor, '#000000')
+    const safeFg = sanitizeCssColor(textColor, '#ffffff')
+    const safeFont = sanitizeCssValue(fontFamily)
+
     return `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -75,9 +94,9 @@ export default class HtmlController {
   html,body{height:100%}
   body{
     margin:0;
-    background:${bgColor};
-    color:${textColor};
-    font-family:${fontFamily};
+    background:${safeBg};
+    color:${safeFg};
+    font-family:${safeFont};
     display:flex;
     align-items:center;
     justify-content:center;
@@ -212,8 +231,21 @@ export default class HtmlController {
       return response.badRequest({ error: 'filename must end with .html' })
     }
 
+    // Sanitize CSS values
+    const safeBg = sanitizeCssColor(bgColor, '#000000')
+    const safeFg = sanitizeCssColor(textColor, '#ffffff')
+    const safeAccent = sanitizeCssColor(accentColor, '#22c55e')
+    const safeFont = sanitizeCssValue(fontFamily)
+
     // Generate countdown HTML with embedded config
-    const config = { title, deadlineISO, bgColor, textColor, accentColor, fontFamily }
+    const config = {
+      title,
+      deadlineISO,
+      bgColor: safeBg,
+      textColor: safeFg,
+      accentColor: safeAccent,
+      fontFamily: safeFont,
+    }
     const configJson = JSON.stringify(config).replace(/</g, '\\u003c')
 
     const html = `<!doctype html>
@@ -223,9 +255,9 @@ export default class HtmlController {
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>${title}</title>
 <style>
-  :root{--bg:${bgColor};--fg:${textColor};--accent:${accentColor}}
+  :root{--bg:${safeBg};--fg:${safeFg};--accent:${safeAccent}}
   html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--fg);font-family:${fontFamily};display:flex;align-items:center;justify-content:center}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:${safeFont};display:flex;align-items:center;justify-content:center}
   .wrap{box-sizing:border-box;width:100%;max-width:1200px;padding:24px;text-align:center}
   h1{margin:0 0 12px;font-size:80px;letter-spacing:.3px}
   .when{opacity:.85;margin-bottom:20px;font-size:clamp(14px,2.4vw,18px)}
