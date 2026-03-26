@@ -539,6 +539,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
             gap: 1.5,
             alignItems: 'stretch',
             flexDirection: { xs: 'column', lg: 'row' },
+            mb: 3,
           }}
         >
           <Paper
@@ -721,6 +722,8 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 1.3,
+                flex: 1,
+                overflow: 'auto',
               }}
             >
               <Typography variant="h6" fontWeight={700}>
