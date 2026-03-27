@@ -78,6 +78,9 @@ function resolveObjectFit(fitMode: ManifestDefaults['fitMode']) {
   return 'contain';
 }
 
+const MEDIA_BASE_URL =
+  process.env.REACT_APP_API_URL || `http://${window.location.hostname}:3333`;
+
 function normalizeMediaUrl(url: string) {
   if (/^https?:\/\//i.test(url)) {
     try {
@@ -95,7 +98,7 @@ function normalizeMediaUrl(url: string) {
     }
   }
 
-  return `http://${window.location.hostname}:3333${url.startsWith('/') ? '' : '/'}${url}`;
+  return `${MEDIA_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
 export default function Player() {
