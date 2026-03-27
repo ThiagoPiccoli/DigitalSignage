@@ -29,9 +29,9 @@ export default class MediaController {
       return response.badRequest({ error: 'Invalid filename' })
     }
 
-    const mediaPath = MediaService.resolveFilePath(filename)
+    const mediaPath = process.env.MEDIA_PATH
     const candidatePaths = [
-      ...(mediaPath ? [mediaPath] : []),
+      ...(mediaPath ? [path.join(mediaPath, filename)] : []),
       app.publicPath(path.join('media', filename)),
       path.resolve(process.cwd(), 'public', 'media', filename),
       path.resolve(process.cwd(), 'apiAdonis', 'public', 'media', filename),
