@@ -118,6 +118,20 @@ export default class MediaService {
     return resolvedPath
   }
 
+  /**
+   * Publicly resolve a sanitized filename to its full path inside MEDIA_DIR.
+   * Returns null if the filename is invalid.
+   */
+  static resolveFilePath(filename: string): string | null {
+    const sanitized = this.sanitizeFilename(filename)
+    if (!sanitized) return null
+    try {
+      return this.safeResolvePath(sanitized)
+    } catch {
+      return null
+    }
+  }
+
   static async listMediaFiles(): Promise<string[]> {
     await this.ensureMediaDir()
     const files = await fs.readdir(this.MEDIA_DIR)
