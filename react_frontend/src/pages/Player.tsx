@@ -78,7 +78,7 @@ function resolveObjectFit(fitMode: ManifestDefaults['fitMode']) {
   return 'contain';
 }
 
-const MEDIA_BASE_URL =
+const API_BASE =
   process.env.REACT_APP_API_URL || `http://${window.location.hostname}:3333`;
 
 function normalizeMediaUrl(url: string) {
@@ -89,7 +89,10 @@ function normalizeMediaUrl(url: string) {
         parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
 
       if (isLocalHost) {
-        parsed.hostname = window.location.hostname;
+        const apiUrl = new URL(API_BASE);
+        parsed.hostname = apiUrl.hostname;
+        parsed.port = apiUrl.port;
+        parsed.protocol = apiUrl.protocol;
       }
 
       return parsed.toString();
@@ -98,7 +101,7 @@ function normalizeMediaUrl(url: string) {
     }
   }
 
-  return `${MEDIA_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  return `${API_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
 export default function Player() {
