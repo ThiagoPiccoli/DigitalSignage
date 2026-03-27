@@ -91,9 +91,9 @@ export default class HtmlController {
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>${title}</title>
 <style>
-  html,body{height:100%}
+  *{margin:0;padding:0;box-sizing:border-box;cursor:none!important}
+  html,body{height:100%;overflow:hidden}
   body{
-    margin:0;
     background:${safeBg};
     color:${safeFg};
     font-family:${safeFont};
@@ -101,23 +101,75 @@ export default class HtmlController {
     align-items:center;
     justify-content:center;
   }
-  .wrap{
-    box-sizing:border-box;
-    max-width:${Number(maxWidthPx) || DEFAULT_HTML_MAX_WIDTH}px;
-    width:100%;
-    padding:${Number(paddingPx) || DEFAULT_HTML_PADDING}px;
-    font-size:${Number(fontSizePx) || 48}px;
-    line-height:1.25;
-    text-align:${align};
-    word-wrap:break-word;
-    overflow-wrap:break-word;
+  body::before{
+    content:'';position:fixed;inset:0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 50%,rgba(30,80,220,0.15) 0%,transparent 70%),
+      radial-gradient(ellipse 60% 80% at 80% 30%,rgba(100,30,200,0.12) 0%,transparent 70%);
+    animation:bgShift 8s ease-in-out infinite alternate;
+    z-index:0;pointer-events:none;
   }
-  * { cursor:none !important; }
+  @keyframes bgShift{from{opacity:.7}to{opacity:1}}
+  body::after{
+    content:'';position:fixed;inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);
+    background-size:60px 60px;z-index:0;pointer-events:none;
+  }
+  .card{
+    position:relative;z-index:1;
+    width:min(88vw,${Number(maxWidthPx) || DEFAULT_HTML_MAX_WIDTH}px);
+    padding:${Number(paddingPx) || DEFAULT_HTML_PADDING}px;
+    border-radius:24px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.06),0 32px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.08);
+    display:flex;flex-direction:column;align-items:center;gap:24px;
+    animation:fadeUp .7s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+  .card::before{
+    content:'';position:absolute;top:0;left:10%;right:10%;height:3px;
+    border-radius:0 0 4px 4px;
+    background:linear-gradient(90deg,${safeFg}44,${safeFg}bb,${safeFg}44);
+    opacity:.7;
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:8px 20px;border-radius:100px;
+    background:${safeFg}18;border:1px solid ${safeFg}55;
+    animation:pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 ${safeFg}44}50%{box-shadow:0 0 0 8px ${safeFg}00}}
+  .badge-dot{width:8px;height:8px;border-radius:50%;background:${safeFg};animation:blink 1.2s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .badge-text{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:${safeFg}cc}
+  .title{
+    font-size:${Number(fontSizePx) || 48}px;
+    font-weight:800;letter-spacing:-.02em;line-height:1.15;
+    text-align:${align};color:${safeFg};
+    text-shadow:0 2px 20px rgba(0,0,0,0.4);
+  }
+  .divider{width:80px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,${safeFg}44,transparent)}
+  .body{
+    font-size:${Math.max(Math.round((Number(fontSizePx) || 48) * 0.5), 18)}px;
+    font-weight:400;line-height:1.6;text-align:${align};
+    color:${safeFg}cc;max-width:700px;
+    word-wrap:break-word;overflow-wrap:break-word;
+  }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    ${safeBody}
+  <div class="card">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      <span class="badge-text">Aviso</span>
+    </div>
+    <div class="title">${title}</div>
+    <div class="divider"></div>
+    <div class="body">${safeBody}</div>
   </div>
 </body>
 </html>`
