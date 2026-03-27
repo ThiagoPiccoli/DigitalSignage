@@ -17,7 +17,6 @@ export type AvisoRow = {
   nome: string;
   aviso: string;
   schedule: Schedule;
-  textColor: string;
   bgColor: string;
 };
 
@@ -41,7 +40,6 @@ export default function AvisoDialog({
         ? {
             ...row,
             schedule: row.schedule ?? DEFAULT_SCHEDULE,
-            textColor: row.textColor || '#ffffff',
             bgColor: row.bgColor || '#000000',
           }
         : null,
@@ -77,26 +75,15 @@ export default function AvisoDialog({
           onChange={handleChange('aviso')}
           helperText="Obrigatório"
         />
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField
-            label="Cor do texto"
-            fullWidth
-            type="color"
-            value={values?.textColor ?? '#ffffff'}
-            onChange={handleChange('textColor')}
-            helperText="Cor principal do texto"
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <TextField
-            label="Cor de fundo"
-            fullWidth
-            type="color"
-            value={values?.bgColor ?? '#000000'}
-            onChange={handleChange('bgColor')}
-            helperText="Cor de fundo do aviso"
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-        </Box>
+        <TextField
+          label="Cor de fundo"
+          fullWidth
+          type="color"
+          value={values?.bgColor ?? '#000000'}
+          onChange={handleChange('bgColor')}
+          helperText="Cor de fundo do aviso"
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
         {values && (
           <Box sx={{ mt: 1 }}>
             <ScheduleFields

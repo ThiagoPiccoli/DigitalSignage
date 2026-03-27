@@ -401,7 +401,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         body: JSON.stringify({
           title: values.nome,
           bodyHtml: values.aviso,
-          textColor: values.textColor,
           bgColor: values.bgColor,
           schedule: values.schedule,
         }),
@@ -426,7 +425,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         body: JSON.stringify({
           title: values.nome,
           deadlineISO: values.deadlineISO,
-          textColor: values.textColor,
           bgColor: values.bgColor,
           schedule: values.schedule,
         }),
@@ -916,7 +914,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 nome: '',
                 aviso: '',
                 schedule: DEFAULT_SCHEDULE,
-                textColor: '#ffffff',
                 bgColor: '#000000',
               }),
           },
@@ -927,7 +924,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 nome: '',
                 deadlineISO: '',
                 schedule: DEFAULT_SCHEDULE,
-                textColor: '#ffffff',
                 bgColor: '#000000',
               }),
           },

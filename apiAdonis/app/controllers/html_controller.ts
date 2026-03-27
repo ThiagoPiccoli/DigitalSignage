@@ -22,7 +22,13 @@ function sanitizeCssColor(value: string, fallback: string): string {
 /** Convert a hex color to rgba() with a given alpha (0-1) */
 function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace('#', '')
-  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h
+  const full =
+    h.length === 3
+      ? h
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : h
   const r = Number.parseInt(full.substring(0, 2), 16)
   const g = Number.parseInt(full.substring(2, 4), 16)
   const b = Number.parseInt(full.substring(4, 6), 16)
@@ -91,14 +97,7 @@ export default class HtmlController {
       : 'center'
 
     const safeBg = sanitizeCssColor(bgColor, '#000000')
-    const safeFg = sanitizeCssColor(textColor, '#ffffff')
     const safeFont = sanitizeCssValue(fontFamily)
-
-    const fg10 = hexToRgba(safeFg, 0.1)
-    const fg25 = hexToRgba(safeFg, 0.25)
-    const fg35 = hexToRgba(safeFg, 0.35)
-    const fg75 = hexToRgba(safeFg, 0.75)
-    const fg80 = hexToRgba(safeFg, 0.8)
 
     return `<!doctype html>
 <html lang="pt-BR">
@@ -111,7 +110,7 @@ export default class HtmlController {
   html,body{height:100%;overflow:hidden}
   body{
     background:${safeBg};
-    color:${safeFg};
+    color:#f8fafc;
     font-family:${safeFont};
     display:flex;
     align-items:center;
@@ -120,8 +119,8 @@ export default class HtmlController {
   body::before{
     content:'';position:fixed;inset:0;
     background:
-      radial-gradient(ellipse 80% 60% at 20% 50%,${fg10} 0%,transparent 70%),
-      radial-gradient(ellipse 60% 80% at 80% 30%,${fg10} 0%,transparent 70%);
+      radial-gradient(ellipse 80% 60% at 20% 50%,rgba(30,80,220,0.15) 0%,transparent 70%),
+      radial-gradient(ellipse 60% 80% at 80% 30%,rgba(100,30,200,0.12) 0%,transparent 70%);
     animation:bgShift 8s ease-in-out infinite alternate;
     z-index:0;pointer-events:none;
   }
@@ -129,8 +128,8 @@ export default class HtmlController {
   body::after{
     content:'';position:fixed;inset:0;
     background-image:
-      linear-gradient(${fg10} 1px,transparent 1px),
-      linear-gradient(90deg,${fg10} 1px,transparent 1px);
+      linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);
     background-size:60px 60px;z-index:0;pointer-events:none;
   }
   .card{
@@ -138,10 +137,10 @@ export default class HtmlController {
     width:min(88vw,${Number(maxWidthPx) || DEFAULT_HTML_MAX_WIDTH}px);
     padding:${Number(paddingPx) || DEFAULT_HTML_PADDING}px;
     border-radius:24px;
-    background:${fg10};
-    border:1px solid ${fg10};
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.1);
     backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    box-shadow:0 0 0 1px ${fg10},0 32px 80px rgba(0,0,0,0.6),inset 0 1px 0 ${fg10};
+    box-shadow:0 0 0 1px rgba(255,255,255,0.06),0 32px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.08);
     display:flex;flex-direction:column;align-items:center;gap:24px;
     animation:fadeUp .7s cubic-bezier(.16,1,.3,1) both;
   }
@@ -149,30 +148,30 @@ export default class HtmlController {
   .card::before{
     content:'';position:absolute;top:0;left:10%;right:10%;height:3px;
     border-radius:0 0 4px 4px;
-    background:linear-gradient(90deg,${fg25},${fg75},${fg25});
+    background:linear-gradient(90deg,rgba(59,130,246,0.3),rgba(139,92,246,0.7),rgba(59,130,246,0.3));
     opacity:.7;
   }
   .badge{
     display:inline-flex;align-items:center;gap:10px;
     padding:8px 20px;border-radius:100px;
-    background:${fg10};border:1px solid ${fg35};
+    background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.4);
     animation:pulse 2.5s ease-in-out infinite;
   }
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 ${fg25}}50%{box-shadow:0 0 0 8px transparent}}
-  .badge-dot{width:8px;height:8px;border-radius:50%;background:${safeFg};animation:blink 1.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0.4)}50%{box-shadow:0 0 0 8px transparent}}
+  .badge-dot{width:8px;height:8px;border-radius:50%;background:#60a5fa;animation:blink 1.2s ease-in-out infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-  .badge-text{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:${fg80}}
+  .badge-text{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#93c5fd}
   .title{
     font-size:${Number(fontSizePx) || 48}px;
     font-weight:800;letter-spacing:-.02em;line-height:1.15;
-    text-align:${align};color:${safeFg};
+    text-align:${align};color:#f8fafc;
     text-shadow:0 2px 20px rgba(0,0,0,0.4);
   }
-  .divider{width:80px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,${fg25},transparent)}
+  .divider{width:80px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.4),transparent)}
   .body{
     font-size:${Math.max(Math.round((Number(fontSizePx) || 48) * 0.5), 18)}px;
     font-weight:400;line-height:1.6;text-align:${align};
-    color:${fg80};max-width:700px;
+    color:rgba(203,213,225,0.85);max-width:700px;
     word-wrap:break-word;overflow-wrap:break-word;
   }
 </style>

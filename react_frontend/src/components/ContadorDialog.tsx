@@ -17,7 +17,6 @@ export type ContadorRow = {
   nome: string;
   deadlineISO: string;
   schedule: Schedule;
-  textColor: string;
   bgColor: string;
 };
 
@@ -41,7 +40,6 @@ export default function ContadorDialog({
         ? {
             ...row,
             schedule: row.schedule ?? DEFAULT_SCHEDULE,
-            textColor: row.textColor || '#ffffff',
             bgColor: row.bgColor || '#000000',
           }
         : null,
@@ -77,26 +75,15 @@ export default function ContadorDialog({
           helperText="Obrigatório"
           slotProps={{ inputLabel: { shrink: true } }}
         />
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField
-            label="Cor do texto"
-            fullWidth
-            type="color"
-            value={values?.textColor ?? '#ffffff'}
-            onChange={handleChange('textColor')}
-            helperText="Cor principal do contador"
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <TextField
-            label="Cor de fundo"
-            fullWidth
-            type="color"
-            value={values?.bgColor ?? '#000000'}
-            onChange={handleChange('bgColor')}
-            helperText="Cor de fundo do contador"
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-        </Box>
+        <TextField
+          label="Cor de fundo"
+          fullWidth
+          type="color"
+          value={values?.bgColor ?? '#000000'}
+          onChange={handleChange('bgColor')}
+          helperText="Cor de fundo do contador"
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
         {values && (
           <Box sx={{ mt: 1 }}>
             <ScheduleFields
