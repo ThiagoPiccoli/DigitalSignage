@@ -61,18 +61,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   const [page, setPage] = React.useState(0);
   const rowsPerPage = adminMode ? 7 : 10;
 
-  // Admin IP address state
-  const [serverIps, setServerIps] = React.useState<string[]>([]);
-
-  React.useEffect(() => {
-    if (adminMode) {
-      api('/admin/local-ip')
-        .then(res => res.json())
-        .then(data => setServerIps(data.ips ?? []))
-        .catch(() => setServerIps([]));
-    }
-  }, [adminMode]);
-
   type ApiHtmlSignage = {
     id: number;
     title: string;
@@ -512,11 +500,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 <Typography color="text.secondary">
                   Gerencie usuários do mural a partir daqui.
                 </Typography>
-                {serverIps.length > 0 && (
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    <strong>IP do Servidor:</strong> {serverIps.join(', ')}
-                  </Typography>
-                )}
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Button

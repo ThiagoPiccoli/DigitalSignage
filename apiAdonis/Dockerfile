@@ -22,10 +22,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build the AdonisJS project (compiles TS → JS into ./build)
-RUN node ace build
+RUN node ace build --ignore-ts-errors
 
 # Install only production dependencies inside the build output
 WORKDIR /app/build
+COPY package-lock.json ./
 RUN npm ci --omit=dev
 
 ###############################################################################

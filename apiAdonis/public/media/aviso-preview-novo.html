@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Aviso</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        cursor: none !important;
+      }
+
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        background: #0a0a0f;
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Fundo animado com gradiente */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 80% 60% at 20% 50%, rgba(30, 80, 220, 0.18) 0%, transparent 70%),
+          radial-gradient(ellipse 60% 80% at 80% 30%, rgba(100, 30, 200, 0.15) 0%, transparent 70%);
+        animation: bgShift 8s ease-in-out infinite alternate;
+        z-index: 0;
+      }
+
+      @keyframes bgShift {
+        from {
+          opacity: 0.7;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .card {
+        position: relative;
+        z-index: 1;
+        width: min(88vw, 1100px);
+        padding: 56px 72px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.06),
+          0 32px 80px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+        animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(28px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Barra de acento no topo do card */
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 10%;
+        right: 10%;
+        height: 3px;
+        border-radius: 0 0 4px 4px;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        opacity: 0.9;
+      }
+
+      .badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 20px;
+        border-radius: 100px;
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.4);
+        animation: pulse 2.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+        }
+      }
+
+      .badge-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #60a5fa;
+        animation: blink 1.2s ease-in-out infinite;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .badge-text {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #93c5fd;
+      }
+
+      .icon {
+        font-size: 64px;
+        line-height: 1;
+        filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
+        animation: iconBounce 3s ease-in-out infinite;
+      }
+
+      @keyframes iconBounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+
+      .title {
+        font-size: clamp(36px, 5vw, 64px);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        text-align: center;
+        color: #f8fafc;
+        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+        /* Troque pelo seu texto aqui */
+      }
+
+      .divider {
+        width: 80px;
+        height: 2px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.4), transparent);
+      }
+
+      .body-text {
+        font-size: clamp(18px, 2.2vw, 28px);
+        font-weight: 400;
+        line-height: 1.6;
+        text-align: center;
+        color: rgba(203, 213, 225, 0.85);
+        max-width: 700px;
+        /* Troque pelo seu subtexto aqui */
+      }
+
+      .footer {
+        margin-top: 8px;
+        font-size: 13px;
+        color: rgba(148, 163, 184, 0.5);
+        letter-spacing: 0.06em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        <span class="badge-text">Aviso Importante</span>
+      </div>
+
+      <div class="icon">📢</div>
+
+      <div class="title">Reunião Geral às 14h</div>
+
+      <div class="divider"></div>
+
+      <div class="body-text">
+        Todos os colaboradores estão convocados para a sala de reuniões do 2º andar. Presença
+        obrigatória.
+      </div>
+
+      <div class="footer">Mural Digital • 27/03/2026</div>
+    </div>
+  </body>
+</html>

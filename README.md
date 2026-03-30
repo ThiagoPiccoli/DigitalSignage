@@ -168,7 +168,10 @@ Manifest/defaults:
 Admin utility:
 
 - GET /admin/state (admin)
-- GET /admin/local-ip (admin)
+
+Public media:
+
+- GET /media/:filename
 
 For full request/response examples, see apiAdonis/API_ROUTES.md.
 
@@ -192,6 +195,55 @@ npm run build      # Production build
 npm test           # Tests
 ```
 
+## Deployment
+
+The project supports deployment with **Vercel** (frontend) and **Fly.io** (backend).
+
+### Frontend — Vercel
+
+1. Import the repository on [Vercel](https://vercel.com).
+2. Set the root directory to `react_frontend`.
+3. Add the environment variable `REACT_APP_API_URL` pointing to your Fly.io backend URL (e.g. `https://digitalsignage-api.fly.dev`).
+4. Vercel auto-detects React and deploys on every push to `main`.
+
+The `vercel.json` in `react_frontend/` handles SPA rewrites.
+
+### Backend — Fly.io
+
+1. Install [flyctl](https://fly.io/docs/flyctl/install/).
+2. From the `apiAdonis/` folder:
+
+```bash
+fly launch          # first-time setup (creates app + volume)
+fly deploy          # subsequent deploys
+```
+
+3. Set secrets:
+
+```bash
+fly secrets set APP_KEY="your-key" FRONTEND_URL="https://your-app.vercel.app"
+```
+
+4. Run migrations on the remote machine:
+
+```bash
+fly ssh console -C "node ace migration:run --force"
+```
+
+The `fly.toml` in `apiAdonis/` configures the app (region `gru`, persistent volume for SQLite + media files, health check on `/manifest`).
+
+### Useful Fly.io commands
+
+| Action             | Command            |
+| ------------------ | ------------------ |
+| View deploy status | `fly status`       |
+| Live logs          | `fly logs`         |
+| SSH into machine   | `fly ssh console`  |
+| List secrets       | `fly secrets list` |
+| Manual redeploy    | `fly deploy`       |
+
+> **Note:** SQLite requires a single machine. Keep `fly scale count 1`.
+
 ## Troubleshooting
 
 Port already in use:
@@ -214,4 +266,4 @@ Auth redirect to login:
 
 ## Status
 
-This README reflects the current folder structure, scripts, and routing of this repository as of 2026-03-25.
+This README reflects the current folder structure, scripts, and routing of this repository as of 2026-03-30.

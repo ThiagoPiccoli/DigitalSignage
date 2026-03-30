@@ -125,13 +125,6 @@ export default class HtmlController {
     z-index:0;pointer-events:none;
   }
   @keyframes bgShift{from{opacity:.7}to{opacity:1}}
-  body::after{
-    content:'';position:fixed;inset:0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);
-    background-size:60px 60px;z-index:0;pointer-events:none;
-  }
   .card{
     position:relative;z-index:1;
     width:min(88vw,${Number(maxWidthPx) || DEFAULT_HTML_MAX_WIDTH}px);
