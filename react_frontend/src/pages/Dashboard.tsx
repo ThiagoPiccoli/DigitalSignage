@@ -59,7 +59,7 @@ interface DashboardProps {
 export default function Dashboard({ adminMode = false }: DashboardProps) {
   const navigate = useNavigate();
   const [page, setPage] = React.useState(0);
-  const rowsPerPage = adminMode ? 7 : 10;
+  const rowsPerPage = adminMode ? 9 : 7;
 
   type ApiHtmlSignage = {
     id: number;
