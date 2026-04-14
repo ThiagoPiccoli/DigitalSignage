@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import hash from '@adonisjs/core/services/hash'
+import db from '@adonisjs/lucid/services/db'
 
 export default class PasswordsController {
   public async changePassword({ request, response, params }: HttpContext) {
@@ -40,6 +41,10 @@ export default class PasswordsController {
     const user = await User.findOrFail(params.id)
     user.password = newPassword
     await user.save()
+
+    // Revoke all active session tokens so any stolen/leaked credentials
+    // cannot be used after an admin-initiated password reset.
+    await db.from('auth_access_tokens').where('tokenable_id', user.id).delete()
 
     return response.ok({ message: 'User password has been changed by admin' })
   }

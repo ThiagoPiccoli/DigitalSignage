@@ -582,13 +582,18 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
             <ButtonGroup
               variant="outlined"
               aria-label="Basic button group"
-              fullWidth
-              sx={{ flexGrow: 1, mr: 1, borderRadius: 8 }}
+              sx={{
+                flexShrink: 0,
+                overflowX: 'auto',
+                width: '100%',
+                '& .MuiButtonGroup-grouped': { minWidth: 'fit-content' },
+              }}
             >
               {FILTER_OPTIONS.map(({ label, value }) => (
                 <Button
                   key={value}
-                  sx={{ textTransform: 'none' }}
+                  size="small"
+                  sx={{ textTransform: 'none', whiteSpace: 'nowrap', flex: 1 }}
                   variant={filter === value ? 'contained' : 'outlined'}
                   onClick={() => setFilter(value)}
                 >
@@ -599,7 +604,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
 
             <TableContainer
               component={Paper}
-              sx={{ mt: 2, flex: 1, overflow: 'auto' }}
+              sx={{ mt: 2, flex: 1, overflow: 'auto', minHeight: 0 }}
             >
               <Table sx={{ minWidth: 800 }} aria-label="simple table">
                 <TableHead>

@@ -8,11 +8,13 @@ primary_region = 'gru'           # São Paulo — closest to Brazil
   dockerfile = 'Dockerfile'
 
 [env]
-  NODE_ENV  = 'production'
-  HOST      = '0.0.0.0'
-  PORT      = '3333'
-  LOG_LEVEL = 'info'
-  TZ        = 'UTC'
+  NODE_ENV   = 'production'
+  HOST       = '0.0.0.0'
+  PORT       = '3333'
+  LOG_LEVEL  = 'info'
+  TZ         = 'UTC'
+  DB_PATH    = '/app/data/db.sqlite3'
+  MEDIA_PATH = '/app/data/media'
 
 [http_service]
   internal_port  = 3333

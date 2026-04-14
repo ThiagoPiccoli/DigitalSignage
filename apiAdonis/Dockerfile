@@ -45,13 +45,18 @@ WORKDIR /app
 # Copy build output with production node_modules
 COPY --from=build /app/build ./
 
+# Copy startup script
+COPY start.sh ./
+RUN chmod +x /app/start.sh
+
 # Create directories for SQLite database and uploaded media
-RUN mkdir -p tmp public/media && chown -R app:app /app
+# (the /app/data dir is also created at runtime by start.sh after volume mount)
+RUN mkdir -p tmp public/media data && chown -R app:app /app
 
 USER app
 
 # Expose the default AdonisJS port
 EXPOSE 3333
 
-# Use dumb-init to start the server
-CMD ["dumb-init", "node", "bin/server.js"]
+# Use dumb-init → startup script (runs migrations then starts server)
+CMD ["dumb-init", "sh", "/app/start.sh"]
