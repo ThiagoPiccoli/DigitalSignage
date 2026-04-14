@@ -45,7 +45,9 @@ import { getAuthToken } from '../auth';
 import { isScheduleActive } from '../scheduleUtils';
 
 const FILTER_OPTIONS = [
-  { label: 'Todos os conteúdos', value: 'todos' },
+  { label: 'Todos', value: 'todos' },
+  { label: 'Ativos', value: 'ativos' },
+  { label: 'Inativos', value: 'inativos' },
   { label: 'Avisos', value: 'aviso' },
   { label: 'Contadores', value: 'contador' },
   { label: 'Vídeos', value: 'video' },
@@ -258,6 +260,14 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
     .filter(r => {
       if (filter === 'todos') {
         return true;
+      }
+
+      if (filter === 'ativos') {
+        return isScheduleActive(r.schedule);
+      }
+
+      if (filter === 'inativos') {
+        return !isScheduleActive(r.schedule);
       }
 
       const normalizedFilter = filter === 'imagem' ? 'image' : filter;
@@ -533,6 +543,9 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
               height: adminMode ? '75vh' : 'calc(100vh - 104px)',
               border: '1px solid',
               borderColor: 'divider',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -584,7 +597,10 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
               ))}
             </ButtonGroup>
 
-            <TableContainer component={Paper} sx={{ mt: 2 }}>
+            <TableContainer
+              component={Paper}
+              sx={{ mt: 2, flex: 1, overflow: 'auto' }}
+            >
               <Table sx={{ minWidth: 800 }} aria-label="simple table">
                 <TableHead>
                   <TableRow>
@@ -667,6 +683,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
             </TableContainer>
 
             <TablePagination
+              sx={{ flexShrink: 0 }}
               component="div"
               count={filteredRows.length}
               rowsPerPage={rowsPerPage}

@@ -55,19 +55,15 @@ export default function MediaUploadDialog({
 }: MediaUploadDialogProps) {
   const [file, setFile] = React.useState<File | null>(null);
   const [title, setTitle] = React.useState('');
-  const [durationSec, setDurationSec] = React.useState(10);
   const [schedule, setSchedule] = React.useState<Schedule>(DEFAULT_SCHEDULE);
   const [fileError, setFileError] = React.useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const isInvalidImageDuration = type === 'image' && durationSec <= 0;
-  const isSaveDisabled =
-    !file || Boolean(fileError) || !title.trim() || isInvalidImageDuration;
+  const isSaveDisabled = !file || Boolean(fileError) || !title.trim();
 
   React.useEffect(() => {
     if (open) {
       setFile(null);
       setTitle('');
-      setDurationSec(type === 'video' ? 0 : 10);
       setSchedule(DEFAULT_SCHEDULE);
       setFileError('');
     }
@@ -120,14 +116,14 @@ export default function MediaUploadDialog({
   };
 
   const handleSave = () => {
-    if (!file || !title.trim() || isInvalidImageDuration || fileError) {
+    if (!file || !title.trim() || fileError) {
       return;
     }
 
     onSave({
       file,
       title: title.trim(),
-      durationMs: durationSec * 1000,
+      durationMs: type === 'video' ? 0 : 10000,
       schedule,
     });
   };
@@ -203,22 +199,6 @@ export default function MediaUploadDialog({
           onChange={e => setTitle(e.target.value)}
           helperText="Obrigatório"
         />
-
-        {type === 'image' && (
-          <TextField
-            label="Duração de exibição (s)"
-            type="number"
-            fullWidth
-            value={durationSec}
-            onChange={e => setDurationSec(Number(e.target.value))}
-            error={isInvalidImageDuration}
-            helperText={
-              isInvalidImageDuration
-                ? 'Informe uma duração maior que zero.'
-                : 'Tempo que a imagem ficará na tela em segundos (padrão: 10s)'
-            }
-          />
-        )}
 
         <ScheduleFields value={schedule} onChange={setSchedule} />
 

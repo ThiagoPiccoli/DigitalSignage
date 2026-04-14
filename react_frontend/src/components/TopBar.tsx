@@ -2,12 +2,17 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
+import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
+import LightModeRounded from '@mui/icons-material/LightModeRounded';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { clearSession, getHomePath, getSessionUser } from '../auth';
+import { useThemeMode } from '../ThemeContext';
 
 interface TopBarProps {
   username?: string;
@@ -20,6 +25,7 @@ export default function TopBar({ username = 'Thiago Piccoli' }: TopBarProps) {
   const displayName = sessionUser?.username ?? username;
   const homePath = getHomePath(sessionUser);
   const showBackButton = location.pathname !== homePath;
+  const { mode, toggleMode } = useThemeMode();
 
   return (
     <AppBar position="sticky" sx={{ bgcolor: 'primary.main' }}>
@@ -86,6 +92,23 @@ export default function TopBar({ username = 'Thiago Piccoli' }: TopBarProps) {
         <Box sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title={mode === 'light' ? 'Modo escuro' : 'Modo claro'}>
+            <IconButton
+              onClick={toggleMode}
+              color="inherit"
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.35)',
+                '&:hover': {
+                  bgcolor: 'rgba(255,255,255,0.16)',
+                  borderColor: 'rgba(255,255,255,0.65)',
+                },
+              }}
+            >
+              {mode === 'light' ? <DarkModeRounded /> : <LightModeRounded />}
+            </IconButton>
+          </Tooltip>
+
           <Button
             onClick={() => navigate('/perfil')}
             variant="outlined"

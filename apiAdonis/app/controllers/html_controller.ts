@@ -85,7 +85,7 @@ export default class HtmlController {
       bgColor = '#000000',
       textColor = '#ffffff',
       fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
-      fontSizePx = 48,
+      fontSizePx = 64,
       textAlign = 'center',
       paddingPx = DEFAULT_HTML_PADDING,
       maxWidthPx = DEFAULT_HTML_MAX_WIDTH,
@@ -155,14 +155,14 @@ export default class HtmlController {
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
   .badge-text{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#93c5fd}
   .title{
-    font-size:${Number(fontSizePx) || 48}px;
+    font-size:${Number(fontSizePx) || 64}px;
     font-weight:800;letter-spacing:-.02em;line-height:1.15;
     text-align:${align};color:#f8fafc;
     text-shadow:0 2px 20px rgba(0,0,0,0.4);
   }
   .divider{width:80px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.4),transparent)}
   .body{
-    font-size:${Math.max(Math.round((Number(fontSizePx) || 48) * 0.5), 18)}px;
+    font-size:${Math.max(Math.round((Number(fontSizePx) || 64) * 0.6), 24)}px;
     font-weight:400;line-height:1.6;text-align:${align};
     color:rgba(203,213,225,0.85);max-width:700px;
     word-wrap:break-word;overflow-wrap:break-word;
@@ -243,7 +243,7 @@ export default class HtmlController {
       fontFamily:
         fontFamily ||
         'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
-      fontSizePx: fontSizePx || 48,
+      fontSizePx: fontSizePx || 64,
       textAlign: textAlign || 'center',
       paddingPx: paddingPx,
       maxWidthPx: maxWidthPx,
@@ -319,12 +319,12 @@ export default class HtmlController {
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:${safeFont};display:flex;align-items:center;justify-content:center}
   .wrap{box-sizing:border-box;width:100%;max-width:1200px;padding:24px;text-align:center}
-  h1{margin:0 0 12px;font-size:80px;letter-spacing:.3px}
-  .when{opacity:.85;margin-bottom:20px;font-size:clamp(14px,2.4vw,18px)}
+  h1{margin:0 0 12px;font-size:96px;letter-spacing:.3px}
+  .when{opacity:.85;margin-bottom:20px;font-size:clamp(16px,2.8vw,22px)}
   .clock{display:flex;gap:14px;justify-content:center;align-items:stretch;flex-wrap:wrap}
   .block{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;min-width:120px;padding:16px 10px}
-  .num{font-variant-numeric:tabular-nums;font-size:clamp(34px,9vw,84px);font-weight:800;line-height:1;color:var(--accent);text-shadow:0 2px 14px rgba(34,197,94,.25)}
-  .lab{margin-top:8px;font-size:clamp(12px,2.2vw,16px);opacity:.85}
+  .num{font-variant-numeric:tabular-nums;font-size:clamp(40px,10vw,100px);font-weight:800;line-height:1;color:var(--accent);text-shadow:0 2px 14px rgba(34,197,94,.25)}
+  .lab{margin-top:8px;font-size:clamp(14px,2.6vw,20px);opacity:.85}
   .done{margin-top:14px;font-weight:700;color:var(--accent);font-size:clamp(16px,3.6vw,22px)}
   *{cursor:none!important}
 </style>
