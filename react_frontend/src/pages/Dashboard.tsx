@@ -579,9 +579,10 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
               </Button>
             </Box>
 
+            {/* Type filters */}
             <ButtonGroup
               variant="outlined"
-              aria-label="Basic button group"
+              aria-label="Filtro por tipo"
               sx={{
                 flexShrink: 0,
                 overflowX: 'auto',
@@ -589,13 +590,39 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 '& .MuiButtonGroup-grouped': { minWidth: 'fit-content' },
               }}
             >
-              {FILTER_OPTIONS.map(({ label, value }) => (
+              {FILTER_OPTIONS.filter(
+                o => !['ativos', 'inativos'].includes(o.value),
+              ).map(({ label, value }) => (
                 <Button
                   key={value}
                   size="small"
                   sx={{ textTransform: 'none', whiteSpace: 'nowrap', flex: 1 }}
                   variant={filter === value ? 'contained' : 'outlined'}
                   onClick={() => setFilter(value)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </ButtonGroup>
+
+            {/* Active/Inactive toggle */}
+            <ButtonGroup
+              variant="outlined"
+              aria-label="Filtro por status"
+              sx={{ flexShrink: 0, mt: 1 }}
+            >
+              {FILTER_OPTIONS.filter(o =>
+                ['ativos', 'inativos'].includes(o.value),
+              ).map(({ label, value }) => (
+                <Button
+                  key={value}
+                  size="small"
+                  color={value === 'ativos' ? 'success' : 'error'}
+                  sx={{ textTransform: 'none', px: 2.5 }}
+                  variant={filter === value ? 'contained' : 'outlined'}
+                  onClick={() =>
+                    setFilter(prev => (prev === value ? 'todos' : value))
+                  }
                 >
                   {label}
                 </Button>
@@ -892,9 +919,13 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                       </Typography>
                     </Box>
                     <Typography
-                      variant="subtitle2"
+                      variant="h5"
                       fontWeight={800}
-                      sx={{ color: item.color, textAlign: 'center' }}
+                      sx={{
+                        color: item.color,
+                        textAlign: 'center',
+                        lineHeight: 1,
+                      }}
                     >
                       {item.value}
                     </Typography>
