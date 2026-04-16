@@ -1,5 +1,3 @@
-import { load } from 'cheerio'
-
 export interface CardapioItem {
   nome: string
   ingredientes: string
@@ -14,8 +12,8 @@ export interface CardapioData {
 }
 
 export default class CardapioService {
-  private static readonly COBALTO_URL =
-    'https://cobalto.ufpel.edu.br/portal/cardapios/cardapioPublico'
+  private static readonly LISTA_URL =
+    'https://cobalto.ufpel.edu.br/portal/cardapios/cardapioPublico/listaCardapios'
 
   /** Convert YYYY-MM-DD (ISO) to DD/MM/YYYY (Cobalto format) */
   static toCobaltoDate(isoDate: string): string {
@@ -27,14 +25,14 @@ export default class CardapioService {
   /** Fetch and parse the cardápio from Cobalto for a given unit and ISO date */
   static async fetch(unidade: string, isoDate: string): Promise<CardapioData> {
     const cobaltDate = this.toCobaltoDate(isoDate)
-    const url = new URL(this.COBALTO_URL)
-    url.searchParams.set('unidade', unidade)
-    url.searchParams.set('data', cobaltDate)
 
-    const res = await globalThis.fetch(url.toString(), {
+    // Use a plain string URL to avoid URL-encoding the slashes in the date
+    const url = `${this.LISTA_URL}?txtData=${cobaltDate}&txtRestaurante=${encodeURIComponent(unidade)}&rows=100&page=1`
+
+    const res = await globalThis.fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; DigitalSignage/1.0)',
-        'Accept': 'text/html,application/xhtml+xml',
+        'Accept': 'application/json',
       },
       signal: AbortSignal.timeout(20_000),
     })
@@ -43,44 +41,37 @@ export default class CardapioService {
       throw new Error(`Cobalto returned HTTP ${res.status}`)
     }
 
-    const html = await res.text()
-    return this.parse(html, unidade, cobaltDate)
-  }
+    const json = (await res.json()) as {
+      rows: Array<{
+        id: number
+        nome: string
+        descricao: string
+        calorias: number
+        porcao: string
+        refeicao: string
+      }>
+    }
 
-  /** Parse Cobalto HTML and extract cardápio items */
-  static parse(html: string, unidade: string, cobaltDate: string): CardapioData {
-    const $ = load(html)
+    if (!json.rows || !Array.isArray(json.rows)) {
+      throw new Error('Resposta inesperada do Cobalto')
+    }
+
     const almoco: CardapioItem[] = []
     const janta: CardapioItem[] = []
-    let currentSection = ''
 
-    $('table tr').each((_i, tr) => {
-      const cells = $(tr).find('td')
-      if (cells.length === 0) return
-
-      if (cells.length === 1) {
-        const text = cells.first().text().trim().toUpperCase()
-        if (text.includes('ALMO')) {
-          currentSection = 'almoco'
-        } else if (text.includes('JANTA') || text.includes('CEIA') || text.includes('JANTAR')) {
-          currentSection = 'janta'
-        }
-        return
+    for (const row of json.rows) {
+      const item: CardapioItem = {
+        nome: row.nome ?? '',
+        ingredientes: row.descricao ?? '',
+        kcal: row.calorias !== null && row.calorias !== undefined ? String(row.calorias) : '',
       }
-
-      if (cells.length >= 3 && currentSection) {
-        const nome = $(cells.get(0)).text().trim()
-        const ingredientes = $(cells.get(1)).text().trim()
-        const kcal = $(cells.get(2)).text().trim()
-        if (!nome) return
-        const item: CardapioItem = { nome, ingredientes, kcal }
-        if (currentSection === 'almoco') {
-          almoco.push(item)
-        } else {
-          janta.push(item)
-        }
+      const refeicao = (row.refeicao ?? '').toUpperCase()
+      if (refeicao.includes('ALMO')) {
+        almoco.push(item)
+      } else if (refeicao.includes('JANT') || refeicao.includes('CEIA')) {
+        janta.push(item)
       }
-    })
+    }
 
     return { data: cobaltDate, unidade, almoco, janta }
   }
