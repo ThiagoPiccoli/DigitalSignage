@@ -36,6 +36,9 @@ import SuccessSnackbar from '../components/SuccessSnackbar';
 import PopperMenu from '../components/PopperMenu';
 import AvisoDialog, { type AvisoRow } from '../components/AvisoDialog';
 import ContadorDialog, { type ContadorRow } from '../components/ContadorDialog';
+import CardapioRuDialog, {
+  type CardapioRuRow,
+} from '../components/CardapioRuDialog';
 import MediaUploadDialog, {
   type MediaUploadData,
 } from '../components/MediaUploadDialog';
@@ -50,6 +53,7 @@ const FILTER_OPTIONS = [
   { label: 'Inativos', value: 'inativos' },
   { label: 'Avisos', value: 'aviso' },
   { label: 'Contadores', value: 'contador' },
+  { label: 'Cardápio RU', value: 'cardapio-ru' },
   { label: 'Vídeos', value: 'video' },
   { label: 'Imagens', value: 'imagem' },
 ] as const;
@@ -66,9 +70,10 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   type ApiHtmlSignage = {
     id: number;
     title: string;
-    fileType: 'aviso' | 'contador';
+    fileType: 'aviso' | 'contador' | 'cardapio-ru';
     bodyHtml: string;
     htmlUrl: string;
+    bgColor: string;
     schedule?: Schedule;
     createdAt: string;
     lastModified: number;
@@ -94,7 +99,8 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   type DashboardRow = Row & {
     id: number;
     source: 'html' | 'player';
-    fileType: 'aviso' | 'contador' | 'video' | 'image';
+    fileType: 'aviso' | 'contador' | 'video' | 'image' | 'cardapio-ru';
+    bgColor?: string;
   };
 
   const extractDeadlineISO = (bodyHtml: string) => {
@@ -135,17 +141,41 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   const [contador, setContador] = React.useState<ContadorRow | null>(null);
   const [contadorSuccess, setContadorSuccess] = React.useState(false);
 
+  // Cardápio RU dialog state
+  const [cardapioRu, setCardapioRu] = React.useState<CardapioRuRow | null>(
+    null,
+  );
+  const [cardapioRuSuccess, setCardapioRuSuccess] = React.useState(false);
+
   // Media upload dialogs
   const [uploadType, setUploadType] = React.useState<'video' | 'image' | null>(
     null,
   );
   const [uploadSuccess, setUploadSuccess] = React.useState(false);
 
+  const extractCardapioMeta = (
+    bodyHtml: string,
+  ): { unidade: string; date: string } => {
+    const match = bodyHtml.match(/^CardapioRU:(.+)$/);
+    if (!match) return { unidade: 'CENTRO', date: '' };
+    try {
+      const meta = JSON.parse(match[1]);
+      // date is stored as DD/MM/YYYY; convert to YYYY-MM-DD for date input
+      const raw: string = meta.date || '';
+      const parts = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      const isoDate = parts ? `${parts[3]}-${parts[2]}-${parts[1]}` : raw;
+      return { unidade: meta.unidade || 'CENTRO', date: isoDate };
+    } catch {
+      return { unidade: 'CENTRO', date: '' };
+    }
+  };
+
   const mapTypeToLabel = (
-    type: 'aviso' | 'contador' | 'video' | 'image',
+    type: 'aviso' | 'contador' | 'video' | 'image' | 'cardapio-ru',
   ): Row['tipo'] => {
     if (type === 'aviso') return 'Aviso';
     if (type === 'contador') return 'Contador';
+    if (type === 'cardapio-ru') return 'Cardápio RU';
     if (type === 'video') return 'Vídeo';
     return 'Imagem';
   };
@@ -220,13 +250,17 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         tipo: mapTypeToLabel(item.fileType),
         data: formatDate(item.createdAt),
         criador: item.lastModifiedUser?.username ?? 'Desconhecido',
-        aviso: item.fileType === 'aviso' ? item.bodyHtml : undefined,
+        aviso:
+          item.fileType === 'aviso' || item.fileType === 'cardapio-ru'
+            ? item.bodyHtml
+            : undefined,
         deadlineISO:
           item.fileType === 'contador'
             ? extractDeadlineISO(item.bodyHtml)
             : undefined,
         mediaUrl: item.htmlUrl,
         schedule: normalizeSchedule(item.schedule),
+        bgColor: item.bgColor,
       }));
 
       const mediaRows: DashboardRow[] = mediaData.map(item => ({
@@ -439,6 +473,39 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
     }
 
     setContador(null);
+  };
+
+  const handleCardapioRuSave = async (values: CardapioRuRow) => {
+    try {
+      const payload = {
+        title: values.nome,
+        unidade: values.unidade,
+        date: values.date,
+        bgColor: values.bgColor,
+        schedule: values.schedule,
+      };
+
+      const isEditing = Boolean(values.id);
+      const res = await api(
+        isEditing ? `/html/cardapio-ru/${values.id}` : '/html/cardapio-ru',
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('Failed to save cardápio RU', body);
+      } else {
+        await fetchSignage();
+        setCardapioRuSuccess(true);
+      }
+    } catch (error) {
+      console.error('Error saving cardápio RU:', error);
+    }
+
+    setCardapioRu(null);
   };
 
   const handleUploadSave = async (values: MediaUploadData) => {
@@ -693,7 +760,23 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                             variant="outlined"
                             color="primary"
                             size="small"
-                            onClick={() => setEditRow(row)}
+                            onClick={() => {
+                              if (row.fileType === 'cardapio-ru') {
+                                const meta = extractCardapioMeta(
+                                  row.aviso || '',
+                                );
+                                setCardapioRu({
+                                  id: row.id,
+                                  nome: row.nome,
+                                  unidade: meta.unidade,
+                                  date: meta.date,
+                                  bgColor: row.bgColor || '#0f172a',
+                                  schedule: row.schedule || DEFAULT_SCHEDULE,
+                                });
+                              } else {
+                                setEditRow(row);
+                              }
+                            }}
                           >
                             Editar
                           </Button>
@@ -963,6 +1046,17 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 bgColor: '#000000',
               }),
           },
+          {
+            label: 'Cardápio RU',
+            onClick: () =>
+              setCardapioRu({
+                nome: 'Cardápio RU',
+                unidade: 'CENTRO',
+                date: new Date().toISOString().slice(0, 10),
+                bgColor: '#0f172a',
+                schedule: DEFAULT_SCHEDULE,
+              }),
+          },
           { label: 'Vídeo', onClick: () => setUploadType('video') },
           { label: 'Imagem', onClick: () => setUploadType('image') },
         ]}
@@ -1000,6 +1094,13 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         onSave={handleContadorSave}
       />
 
+      {/* Cardápio RU dialog */}
+      <CardapioRuDialog
+        row={cardapioRu}
+        onClose={() => setCardapioRu(null)}
+        onSave={handleCardapioRuSave}
+      />
+
       {/* Media upload dialog (Video / Image) */}
       <MediaUploadDialog
         open={Boolean(uploadType)}
@@ -1028,6 +1129,11 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         open={contadorSuccess}
         onClose={() => setContadorSuccess(false)}
         message="Contador criado com sucesso!"
+      />
+      <SuccessSnackbar
+        open={cardapioRuSuccess}
+        onClose={() => setCardapioRuSuccess(false)}
+        message="Cardápio RU salvo com sucesso!"
       />
       <SuccessSnackbar
         open={uploadSuccess}

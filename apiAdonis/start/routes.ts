@@ -55,6 +55,8 @@ router.delete('/player/:id', [PlayerController, 'destroy']).use(middleware.auth(
 router.post('/html', [HtmlController, 'createHtml']).use(middleware.auth()) // Testado
 router.post('/html/deadline', [HtmlController, 'createDeadline']).use(middleware.auth()) //Testado
 router.post('/html/duplicate/:id', [HtmlController, 'duplicateHtml']).use(middleware.auth()) //Testado
+router.post('/html/cardapio-ru', [HtmlController, 'createCardapioRu']).use(middleware.auth())
+router.put('/html/cardapio-ru/:id', [HtmlController, 'refreshCardapioRu']).use(middleware.auth())
 router.put('/html/:id', [HtmlController, 'updateHtml']).use(middleware.auth()) // Testado
 router.get('/html', [HtmlController, 'index']) // Public for signage playback
 router.get('/html/:id', [HtmlController, 'show']) // Public for signage playback

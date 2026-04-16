@@ -63,6 +63,7 @@
     "@adonisjs/mail": "^9.2.2",
     "@vinejs/vine": "^3.0.1",
     "better-sqlite3": "^12.4.1",
+    "cheerio": "^1.2.0",
     "luxon": "^3.7.2",
     "reflect-metadata": "^0.2.2"
   },

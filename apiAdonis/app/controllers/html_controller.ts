@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import HtmlPlayer from '#models/html_player'
 import MediaService from '../services/media_service.js'
+import CardapioService, { type CardapioData } from '../services/cardapio_service.js'
 
 const DEFAULT_HTML_PADDING = 24
 const DEFAULT_HTML_MAX_WIDTH = 1200
@@ -497,6 +498,241 @@ export default class HtmlController {
     }
 
     return response.ok(htmlPlayer)
+  }
+
+  /**
+   * Generate a full-screen cardápio HTML page for digital signage
+   */
+  private makeCardapioHtml(data: CardapioData, bgColor: string = '#0f172a'): string {
+    const escHtml = (s: string) =>
+      String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+
+    const safeBg = sanitizeCssColor(bgColor, '#0f172a')
+
+    const itemHtml = (items: CardapioData['almoco'], emptyMsg: string) => {
+      if (items.length === 0) {
+        return `<div class="empty">${emptyMsg}</div>`
+      }
+      return items
+        .map(
+          (item) =>
+            `<div class="item"><span class="item-name">${escHtml(item.nome)}</span><span class="item-kcal">${escHtml(item.kcal)} kcal</span></div>`
+        )
+        .join('')
+    }
+
+    const dateDisplay = (() => {
+      const parts = data.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+      if (!parts) return data.data
+      const months = [
+        'Janeiro',
+        'Fevereiro',
+        'Março',
+        'Abril',
+        'Maio',
+        'Junho',
+        'Julho',
+        'Agosto',
+        'Setembro',
+        'Outubro',
+        'Novembro',
+        'Dezembro',
+      ]
+      const day = Number.parseInt(parts[1], 10)
+      const month = Number.parseInt(parts[2], 10) - 1
+      const year = parts[3]
+      return `${day} de ${months[month]} de ${year}`
+    })()
+
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cardápio RU</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;cursor:none!important}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:${safeBg};
+    color:#f1f5f9;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    display:grid;
+    grid-template-rows:auto 1fr;
+    height:100vh;
+    padding:2vw;
+    gap:1.5vw;
+    animation:fadeUp .7s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .header{text-align:center;padding:.8vw 0}
+  .header-badge{
+    display:inline-flex;align-items:center;gap:.6vw;
+    padding:.4vw 1.4vw;border-radius:100px;margin-bottom:.8vw;
+    background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.4);
+    font-size:clamp(10px,1vw,16px);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#93c5fd;
+  }
+  .header-dot{width:.6vw;height:.6vw;border-radius:50%;background:#60a5fa;animation:blink 1.2s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .header h1{font-size:clamp(18px,2.8vw,44px);font-weight:800;letter-spacing:-.02em;color:#f8fafc;line-height:1.1}
+  .header .meta{font-size:clamp(11px,1.3vw,20px);color:#94a3b8;margin-top:.4vw}
+  .sections{display:grid;grid-template-columns:1fr 1fr;gap:2vw;min-height:0}
+  .section{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:1.2vw;padding:1.4vw;
+    display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .section-title{
+    font-size:clamp(13px,1.6vw,26px);font-weight:700;letter-spacing:.1em;
+    color:#60a5fa;text-align:center;text-transform:uppercase;
+    padding-bottom:.8vw;margin-bottom:.8vw;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    flex-shrink:0;
+  }
+  .items{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:.4vw}
+  .item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:.35vw .7vw;border-radius:.4vw;
+    font-size:clamp(10px,1.4vw,22px);
+  }
+  .item:nth-child(odd){background:rgba(255,255,255,.04)}
+  .item:nth-child(even){background:rgba(255,255,255,.02)}
+  .item-name{color:#e2e8f0;font-weight:500;flex:1;word-break:break-word}
+  .item-kcal{color:#64748b;font-size:clamp(8px,1.1vw,16px);margin-left:1vw;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .empty{color:#475569;font-style:italic;font-size:clamp(10px,1.3vw,20px);text-align:center;padding:2vw 0}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-badge">
+      <span class="header-dot"></span>
+      Restaurante Universitário
+    </div>
+    <h1>Cardápio do dia</h1>
+    <div class="meta">${escHtml(dateDisplay)} &nbsp;·&nbsp; Unidade ${escHtml(data.unidade)}</div>
+  </div>
+  <div class="sections">
+    <div class="section">
+      <div class="section-title">Almoço</div>
+      <div class="items">
+        ${itemHtml(data.almoco, 'Cardápio de almoço não disponível.')}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Janta</div>
+      <div class="items">
+        ${itemHtml(data.janta, 'Cardápio de janta não disponível.')}
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+  }
+
+  /**
+   * Create a Cardápio RU HTML page by fetching data from Cobalto (UFPEL)
+   */
+  public async createCardapioRu({ request, response, auth }: HttpContext) {
+    const { title, unidade, date, bgColor, schedule } = request.only([
+      'title',
+      'unidade',
+      'date',
+      'bgColor',
+      'schedule',
+    ])
+
+    if (!unidade || !date) {
+      return response.badRequest({ error: 'unidade and date are required' })
+    }
+
+    let cardapioData: CardapioData
+    try {
+      cardapioData = await CardapioService.fetch(unidade, date)
+    } catch (err) {
+      return response.serviceUnavailable({
+        error: 'Não foi possível buscar o cardápio do Cobalto.',
+        detail: err instanceof Error ? err.message : String(err),
+      })
+    }
+
+    const baseName = `cardapio-ru-${Date.now()}.html`
+    const html = this.makeCardapioHtml(cardapioData, bgColor || '#0f172a')
+
+    await MediaService.writeFile(baseName, html)
+    const fileUrl = MediaService.getFileUrl(baseName)
+
+    const safeBg = sanitizeCssColor(bgColor || '#0f172a', '#0f172a')
+    const htmlPlayer = await HtmlPlayer.create({
+      fileType: 'cardapio-ru',
+      title: title || `Cardápio RU - ${unidade}`,
+      htmlUrl: fileUrl,
+      bodyHtml: `CardapioRU:${JSON.stringify({ unidade, date: cardapioData.data })}`,
+      bgColor: safeBg,
+      textColor: '#f1f5f9',
+      fontFamily: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif',
+      fontSizePx: 24,
+      textAlign: 'left',
+      paddingPx: DEFAULT_HTML_PADDING,
+      maxWidthPx: DEFAULT_HTML_MAX_WIDTH,
+      schedule: this.normalizeSchedule(schedule),
+      lastModified: auth.user?.id || 0,
+    })
+
+    return response.created({ ok: true, file: baseName, player: htmlPlayer })
+  }
+
+  /**
+   * Re-fetch the cardápio from Cobalto and regenerate the HTML file
+   */
+  public async refreshCardapioRu({ request, response, params, auth }: HttpContext) {
+    const htmlPlayer = await HtmlPlayer.findOrFail(params.id)
+
+    const { unidade, date, title, bgColor, schedule } = request.only([
+      'unidade',
+      'date',
+      'title',
+      'bgColor',
+      'schedule',
+    ])
+
+    if (!unidade || !date) {
+      return response.badRequest({ error: 'unidade and date are required' })
+    }
+
+    let cardapioData: CardapioData
+    try {
+      cardapioData = await CardapioService.fetch(unidade, date)
+    } catch (err) {
+      return response.serviceUnavailable({
+        error: 'Não foi possível buscar o cardápio do Cobalto.',
+        detail: err instanceof Error ? err.message : String(err),
+      })
+    }
+
+    const resolvedBg = bgColor || htmlPlayer.bgColor || '#0f172a'
+    const html = this.makeCardapioHtml(cardapioData, resolvedBg)
+
+    const filename = htmlPlayer.htmlUrl.split('/').pop()
+    if (filename) {
+      await MediaService.writeFile(filename, html)
+    }
+
+    htmlPlayer.merge({
+      title: title || htmlPlayer.title,
+      bodyHtml: `CardapioRU:${JSON.stringify({ unidade, date: cardapioData.data })}`,
+      bgColor: sanitizeCssColor(resolvedBg, '#0f172a'),
+      schedule: schedule ? this.normalizeSchedule(schedule) : htmlPlayer.schedule,
+      lastModified: auth.user?.id || htmlPlayer.lastModified,
+    })
+    await htmlPlayer.save()
+
+    return response.ok({ ok: true, player: htmlPlayer })
   }
 
   public async destroy({ response, params }: HttpContext) {
