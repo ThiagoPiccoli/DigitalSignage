@@ -2,10 +2,12 @@ import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
 import {
+  Alert,
   Button,
   ButtonGroup,
   Chip,
   InputAdornment,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -146,6 +148,9 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
     null,
   );
   const [cardapioRuSuccess, setCardapioRuSuccess] = React.useState(false);
+  const [cardapioRuError, setCardapioRuError] = React.useState<string | null>(
+    null,
+  );
 
   // Media upload dialogs
   const [uploadType, setUploadType] = React.useState<'video' | 'image' | null>(
@@ -477,10 +482,11 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
 
   const handleCardapioRuSave = async (values: CardapioRuRow) => {
     try {
+      const today = new Date().toISOString().slice(0, 10);
       const payload = {
         title: values.nome,
         unidade: values.unidade,
-        date: values.date,
+        date: today,
         bgColor: values.bgColor,
         schedule: values.schedule,
       };
@@ -496,16 +502,17 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        console.error('Failed to save cardápio RU', body);
+        const msg = body?.error || 'Não foi possível salvar o Cardápio RU.';
+        setCardapioRuError(msg);
       } else {
         await fetchSignage();
+        setCardapioRu(null);
         setCardapioRuSuccess(true);
       }
     } catch (error) {
       console.error('Error saving cardápio RU:', error);
+      setCardapioRuError('Erro ao conectar com o servidor.');
     }
-
-    setCardapioRu(null);
   };
 
   const handleUploadSave = async (values: MediaUploadData) => {
@@ -769,7 +776,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                                   id: row.id,
                                   nome: row.nome,
                                   unidade: meta.unidade,
-                                  date: meta.date,
                                   bgColor: row.bgColor || '#0f172a',
                                   schedule: row.schedule || DEFAULT_SCHEDULE,
                                 });
@@ -1052,7 +1058,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
               setCardapioRu({
                 nome: 'Cardápio RU',
                 unidade: 'CENTRO',
-                date: new Date().toISOString().slice(0, 10),
                 bgColor: '#0f172a',
                 schedule: DEFAULT_SCHEDULE,
               }),
@@ -1135,6 +1140,20 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         onClose={() => setCardapioRuSuccess(false)}
         message="Cardápio RU salvo com sucesso!"
       />
+      <Snackbar
+        open={Boolean(cardapioRuError)}
+        autoHideDuration={5000}
+        onClose={() => setCardapioRuError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setCardapioRuError(null)}
+          severity="error"
+          sx={{ width: '100%' }}
+        >
+          {cardapioRuError}
+        </Alert>
+      </Snackbar>
       <SuccessSnackbar
         open={uploadSuccess}
         onClose={() => setUploadSuccess(false)}

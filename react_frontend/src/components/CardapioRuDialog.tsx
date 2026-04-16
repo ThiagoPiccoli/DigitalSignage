@@ -7,7 +7,6 @@ import {
   DialogTitle,
   MenuItem,
   TextField,
-  Typography,
 } from '@mui/material';
 import React from 'react';
 import ScheduleFields, {
@@ -18,8 +17,6 @@ import ScheduleFields, {
 export type CardapioRuRow = {
   id?: number;
   nome: string;
-  /** ISO date YYYY-MM-DD used by the date input */
-  date: string;
   unidade: string;
   bgColor: string;
   schedule: Schedule;
@@ -42,7 +39,7 @@ export default function CardapioRuDialog({
   onSave,
 }: CardapioRuDialogProps) {
   const [values, setValues] = React.useState<CardapioRuRow | null>(null);
-  const isSaveDisabled = !values?.nome.trim() || !values?.date;
+  const isSaveDisabled = !values?.nome.trim();
 
   React.useEffect(() => {
     setValues(
@@ -96,15 +93,7 @@ export default function CardapioRuDialog({
             </MenuItem>
           ))}
         </TextField>
-        <TextField
-          label="Data do Cardápio"
-          fullWidth
-          type="date"
-          value={values?.date ?? ''}
-          onChange={handleChange('date')}
-          helperText="Data para buscar o cardápio no Cobalto"
-          slotProps={{ inputLabel: { shrink: true } }}
-        />
+
         <TextField
           label="Cor de fundo"
           fullWidth
@@ -125,12 +114,6 @@ export default function CardapioRuDialog({
             />
           </Box>
         )}
-        {isEditing && (
-          <Typography variant="caption" color="text.secondary">
-            Salvar buscará o cardápio atualizado do Cobalto para a data
-            selecionada.
-          </Typography>
-        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">
@@ -142,7 +125,7 @@ export default function CardapioRuDialog({
           color="primary"
           disabled={isSaveDisabled}
         >
-          {isEditing ? 'Atualizar' : 'Buscar e Criar'}
+          {isEditing ? 'Atualizar' : 'Criar'}
         </Button>
       </DialogActions>
     </Dialog>
