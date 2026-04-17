@@ -42,8 +42,6 @@ export default class PasswordsController {
     user.password = newPassword
     await user.save()
 
-    // Revoke all active session tokens so any stolen/leaked credentials
-    // cannot be used after an admin-initiated password reset.
     await db.from('auth_access_tokens').where('tokenable_id', user.id).delete()
 
     return response.ok({ message: 'User password has been changed by admin' })

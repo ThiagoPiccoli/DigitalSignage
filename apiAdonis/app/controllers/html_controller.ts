@@ -519,8 +519,12 @@ export default class HtmlController {
       }
       return items
         .map(
-          (item) =>
-            `<div class="item"><span class="item-name">${escHtml(item.nome)}</span><span class="item-kcal">${escHtml(item.kcal)} kcal</span></div>`
+          (item, i) =>
+            `<div class="item" style="animation-delay:${0.08 * (i + 1)}s">
+              <span class="item-icon">🍽</span>
+              <span class="item-name">${escHtml(item.nome)}</span>
+              <span class="item-kcal">${escHtml(item.kcal)} kcal</span>
+            </div>`
         )
         .join('')
     }
@@ -528,6 +532,15 @@ export default class HtmlController {
     const dateDisplay = (() => {
       const parts = data.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
       if (!parts) return data.data
+      const weekdays = [
+        'Domingo',
+        'Segunda-feira',
+        'Terça-feira',
+        'Quarta-feira',
+        'Quinta-feira',
+        'Sexta-feira',
+        'Sábado',
+      ]
       const months = [
         'Janeiro',
         'Fevereiro',
@@ -544,9 +557,18 @@ export default class HtmlController {
       ]
       const day = Number.parseInt(parts[1], 10)
       const month = Number.parseInt(parts[2], 10) - 1
-      const year = parts[3]
-      return `${day} de ${months[month]} de ${year}`
+      const year = Number.parseInt(parts[3], 10)
+      const d = new Date(year, month, day)
+      const weekday = weekdays[d.getDay()]
+      return `${weekday}, ${day} de ${months[month]} de ${year}`
     })()
+
+    const unidadeLabel =
+      data.unidade === 'CENTRO'
+        ? 'Campus Centro'
+        : data.unidade === 'CAMPUS'
+          ? 'Campus Capão do Leão'
+          : data.unidade
 
     return `<!doctype html>
 <html lang="pt-BR">
@@ -555,82 +577,208 @@ export default class HtmlController {
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Cardápio RU</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;cursor:none!important}
   html,body{height:100%;overflow:hidden}
+
   body{
     background:${safeBg};
     color:#f1f5f9;
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    height:100vh;
     display:grid;
     grid-template-rows:auto 1fr;
-    height:100vh;
-    padding:2vw;
-    gap:1.5vw;
-    animation:fadeUp .7s cubic-bezier(.16,1,.3,1) both;
+    position:relative;
   }
-  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  .header{text-align:center;padding:.8vw 0}
-  .header-badge{
-    display:inline-flex;align-items:center;gap:.6vw;
-    padding:.4vw 1.4vw;border-radius:100px;margin-bottom:.8vw;
-    background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.4);
-    font-size:clamp(10px,1vw,16px);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#93c5fd;
+
+  /* Animated gradient orbs in background */
+  body::before, body::after{
+    content:'';position:fixed;border-radius:50%;filter:blur(80px);opacity:.15;z-index:0;pointer-events:none;
   }
-  .header-dot{width:.6vw;height:.6vw;border-radius:50%;background:#60a5fa;animation:blink 1.2s ease-in-out infinite}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-  .header h1{font-size:clamp(18px,2.8vw,44px);font-weight:800;letter-spacing:-.02em;color:#f8fafc;line-height:1.1}
-  .header .meta{font-size:clamp(11px,1.3vw,20px);color:#94a3b8;margin-top:.4vw}
+  body::before{
+    width:50vw;height:50vw;background:radial-gradient(circle,#3b82f6,transparent 70%);
+    top:-15vw;right:-10vw;animation:orbFloat 20s ease-in-out infinite;
+  }
+  body::after{
+    width:40vw;height:40vw;background:radial-gradient(circle,#8b5cf6,transparent 70%);
+    bottom:-10vw;left:-10vw;animation:orbFloat 25s ease-in-out infinite reverse;
+  }
+  @keyframes orbFloat{
+    0%,100%{transform:translate(0,0) scale(1)}
+    33%{transform:translate(3vw,-2vw) scale(1.1)}
+    66%{transform:translate(-2vw,3vw) scale(.95)}
+  }
+
+  .page{position:relative;z-index:1;display:grid;grid-template-rows:auto 1fr;height:100vh;padding:2vw 3vw;gap:1.5vw}
+
+  /* ─── Header ─── */
+  .header{text-align:center;animation:slideDown .6s cubic-bezier(.16,1,.3,1) both}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:translateY(0)}}
+
+  .header-top{
+    display:flex;align-items:center;justify-content:center;gap:1vw;margin-bottom:.6vw;
+  }
+  .logo-icon{
+    font-size:clamp(28px,3.5vw,56px);
+    filter:drop-shadow(0 0 20px rgba(59,130,246,.4));
+    animation:pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+  .header h1{
+    font-size:clamp(22px,3.2vw,52px);font-weight:900;
+    background:linear-gradient(135deg,#f8fafc 0%,#93c5fd 50%,#60a5fa 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+    letter-spacing:-.03em;line-height:1;
+  }
+
+  .header-sub{
+    display:flex;align-items:center;justify-content:center;gap:1.5vw;
+    font-size:clamp(10px,1.2vw,18px);color:#94a3b8;margin-top:.3vw;
+  }
+  .header-sub .badge{
+    display:inline-flex;align-items:center;gap:.4vw;
+    padding:.2vw .8vw;border-radius:100px;
+    background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);
+    color:#93c5fd;font-weight:600;font-size:clamp(8px,.9vw,14px);
+    text-transform:uppercase;letter-spacing:.1em;
+  }
+  .badge .dot{width:.5vw;height:.5vw;border-radius:50%;background:#60a5fa;animation:blink 1.5s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+  /* ─── Sections grid ─── */
   .sections{display:grid;grid-template-columns:1fr 1fr;gap:2vw;min-height:0}
+
   .section{
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.1);
-    border-radius:1.2vw;padding:1.4vw;
+    background:linear-gradient(145deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,.02) 100%);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:1.5vw;
+    padding:1.6vw;
     display:flex;flex-direction:column;overflow:hidden;
-    box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.06);
+    backdrop-filter:blur(20px);
+    box-shadow:0 20px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);
+    animation:cardAppear .7s cubic-bezier(.16,1,.3,1) both;
   }
-  .section-title{
-    font-size:clamp(13px,1.6vw,26px);font-weight:700;letter-spacing:.1em;
-    color:#60a5fa;text-align:center;text-transform:uppercase;
-    padding-bottom:.8vw;margin-bottom:.8vw;
-    border-bottom:1px solid rgba(255,255,255,.08);
+  .section:nth-child(1){animation-delay:.15s}
+  .section:nth-child(2){animation-delay:.3s}
+  @keyframes cardAppear{from{opacity:0;transform:translateY(40px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+  .section-header{
+    display:flex;align-items:center;gap:.8vw;
+    padding-bottom:1vw;margin-bottom:.8vw;
+    border-bottom:1px solid rgba(255,255,255,.06);
     flex-shrink:0;
   }
-  .items{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:.4vw}
-  .item{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:.35vw .7vw;border-radius:.4vw;
-    font-size:clamp(10px,1.4vw,22px);
+  .section-emoji{font-size:clamp(16px,2vw,32px)}
+  .section-title{
+    font-size:clamp(14px,1.8vw,28px);font-weight:800;
+    text-transform:uppercase;letter-spacing:.08em;
+    background:linear-gradient(90deg,#60a5fa,#a78bfa);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
   }
+
+  .items{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:.5vw}
+
+  .item{
+    display:flex;align-items:center;gap:.6vw;
+    padding:.5vw .8vw;border-radius:.6vw;
+    font-size:clamp(11px,1.3vw,20px);
+    transition:background .2s;
+    animation:itemSlide .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes itemSlide{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+
   .item:nth-child(odd){background:rgba(255,255,255,.04)}
   .item:nth-child(even){background:rgba(255,255,255,.02)}
+
+  .item-icon{font-size:clamp(9px,1vw,16px);opacity:.5;flex-shrink:0}
   .item-name{color:#e2e8f0;font-weight:500;flex:1;word-break:break-word}
-  .item-kcal{color:#64748b;font-size:clamp(8px,1.1vw,16px);margin-left:1vw;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .empty{color:#475569;font-style:italic;font-size:clamp(10px,1.3vw,20px);text-align:center;padding:2vw 0}
+  .item-kcal{
+    color:#64748b;font-size:clamp(8px,1vw,15px);
+    white-space:nowrap;font-variant-numeric:tabular-nums;
+    padding:.15vw .6vw;border-radius:100px;
+    background:rgba(255,255,255,.05);
+    font-weight:600;
+  }
+
+  .empty{
+    color:#475569;font-style:italic;font-size:clamp(11px,1.3vw,20px);
+    text-align:center;padding:3vw 0;
+    display:flex;flex-direction:column;align-items:center;gap:.5vw;
+  }
+  .empty::before{content:'📋';font-size:clamp(20px,2.5vw,40px);opacity:.4}
+
+  /* ─── Footer ─── */
+  .footer{
+    position:fixed;bottom:0;left:0;right:0;
+    padding:.6vw 3vw;
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:clamp(8px,.8vw,12px);color:rgba(148,163,184,.4);
+    z-index:2;
+  }
+  .footer-line{
+    flex:1;height:1px;margin:0 1.5vw;
+    background:linear-gradient(90deg,transparent,rgba(148,163,184,.15),transparent);
+  }
+
+  /* Live clock */
+  .clock{font-variant-numeric:tabular-nums;font-weight:600;color:rgba(148,163,184,.5)}
 </style>
 </head>
 <body>
-  <div class="header">
-    <div class="header-badge">
-      <span class="header-dot"></span>
-      Restaurante Universitário
-    </div>
-    <h1>Cardápio do dia</h1>
-    <div class="meta">${escHtml(dateDisplay)} &nbsp;·&nbsp; Unidade ${escHtml(data.unidade)}</div>
-  </div>
-  <div class="sections">
-    <div class="section">
-      <div class="section-title">Almoço</div>
-      <div class="items">
-        ${itemHtml(data.almoco, 'Cardápio de almoço não disponível.')}
+  <div class="page">
+    <div class="header">
+      <div class="header-top">
+        <span class="logo-icon">🏛️</span>
+        <h1>Cardápio do Dia</h1>
+      </div>
+      <div class="header-sub">
+        <div class="badge"><span class="dot"></span>${escHtml(unidadeLabel)}</div>
+        <span>${escHtml(dateDisplay)}</span>
       </div>
     </div>
-    <div class="section">
-      <div class="section-title">Janta</div>
-      <div class="items">
-        ${itemHtml(data.janta, 'Cardápio de janta não disponível.')}
+
+    <div class="sections">
+      <div class="section">
+        <div class="section-header">
+          <span class="section-emoji">☀️</span>
+          <span class="section-title">Almoço</span>
+        </div>
+        <div class="items">
+          ${itemHtml(data.almoco, 'Cardápio de almoço não disponível.')}
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <span class="section-emoji">🌙</span>
+          <span class="section-title">Janta</span>
+        </div>
+        <div class="items">
+          ${itemHtml(data.janta, 'Cardápio de janta não disponível.')}
+        </div>
       </div>
     </div>
   </div>
+
+  <div class="footer">
+    <span>Restaurante Universitário — UFPel</span>
+    <span class="footer-line"></span>
+    <span class="clock" id="clock"></span>
+  </div>
+
+  <script>
+    !function(){
+      var c=document.getElementById('clock');
+      if(!c)return;
+      function u(){
+        var n=new Date();
+        c.textContent=n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      }
+      u();setInterval(u,1000);
+    }();
+  </script>
 </body>
 </html>`
   }

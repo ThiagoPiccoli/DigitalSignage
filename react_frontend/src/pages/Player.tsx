@@ -209,7 +209,10 @@ export default function Player() {
 
       const normalizedHtmlItems: PlaylistItem[] = htmlData
         .filter(
-          item => item.fileType === 'aviso' || item.fileType === 'contador',
+          item =>
+            item.fileType === 'aviso' ||
+            item.fileType === 'contador' ||
+            item.fileType === 'cardapio-ru',
         )
         .filter(item => isScheduleActive(item.schedule))
         .map(item => ({
@@ -366,7 +369,9 @@ export default function Player() {
       )}
 
       {!loading &&
-        (currentItem?.type === 'aviso' || currentItem?.type === 'contador') && (
+        (currentItem?.type === 'aviso' ||
+          currentItem?.type === 'contador' ||
+          currentItem?.type === 'cardapio-ru') && (
           <Box
             component="iframe"
             key={currentItem.id}
