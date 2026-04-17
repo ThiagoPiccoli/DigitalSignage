@@ -35,7 +35,7 @@ type HtmlItem = {
 type PlaylistItem = {
   id: number;
   title: string;
-  type: 'video' | 'image' | 'aviso' | 'contador';
+  type: 'video' | 'image' | 'aviso' | 'contador' | 'cardapio-ru';
   url: string;
   durationMs: number;
   createdAt: string;
