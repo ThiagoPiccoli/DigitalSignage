@@ -513,21 +513,8 @@ export default class HtmlController {
 
     const safeBg = sanitizeCssColor(bgColor, '#0f172a')
 
-    const itemHtml = (items: CardapioData['almoco'], emptyMsg: string) => {
-      if (items.length === 0) {
-        return `<div class="empty">${emptyMsg}</div>`
-      }
-      return items
-        .map(
-          (item, i) =>
-            `<div class="item" style="animation-delay:${0.08 * (i + 1)}s">
-              <span class="item-icon">🍽</span>
-              <span class="item-name">${escHtml(item.nome)}</span>
-              <span class="item-kcal">${escHtml(item.kcal)} kcal</span>
-            </div>`
-        )
-        .join('')
-    }
+    // Use almoco if available, fall back to janta (they're the same menu)
+    const items = data.almoco.length > 0 ? data.almoco : data.janta
 
     const dateDisplay = (() => {
       const parts = data.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
@@ -542,25 +529,14 @@ export default class HtmlController {
         'Sábado',
       ]
       const months = [
-        'Janeiro',
-        'Fevereiro',
-        'Março',
-        'Abril',
-        'Maio',
-        'Junho',
-        'Julho',
-        'Agosto',
-        'Setembro',
-        'Outubro',
-        'Novembro',
-        'Dezembro',
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
       ]
       const day = Number.parseInt(parts[1], 10)
       const month = Number.parseInt(parts[2], 10) - 1
       const year = Number.parseInt(parts[3], 10)
       const d = new Date(year, month, day)
-      const weekday = weekdays[d.getDay()]
-      return `${weekday}, ${day} de ${months[month]} de ${year}`
+      return `${weekdays[d.getDay()]}, ${day} de ${months[month]} de ${year}`
     })()
 
     const unidadeLabel =
@@ -569,6 +545,176 @@ export default class HtmlController {
         : data.unidade === 'CAMPUS'
           ? 'Campus Capão do Leão'
           : data.unidade
+
+    // Split items into two columns for layout
+    const mid = Math.ceil(items.length / 2)
+    const col1 = items.slice(0, mid)
+    const col2 = items.slice(mid)
+
+    const renderItem = (item: (typeof items)[0], i: number) =>
+      `<div class="item" style="animation-delay:${0.06 * i}s">
+        <div class="item-left">
+          <span class="item-num">${String(i + 1).padStart(2, '0')}</span>
+          <span class="item-name">${escHtml(item.nome)}</span>
+        </div>
+        <span class="item-kcal">${escHtml(item.kcal)}<small>kcal</small></span>
+      </div>`
+
+    const emptyHtml = `<div class="empty">Cardápio não disponível para hoje.</div>`
+
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cardápio RU</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;cursor:none!important}
+  html,body{height:100%;overflow:hidden}
+
+  body{
+    background:${safeBg};
+    color:#f1f5f9;
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* Orbs */
+  .orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.12;z-index:0;pointer-events:none}
+  .orb-1{width:55vw;height:55vw;background:radial-gradient(circle,#3b82f6,transparent 65%);top:-20vw;right:-15vw;animation:drift 22s ease-in-out infinite}
+  .orb-2{width:45vw;height:45vw;background:radial-gradient(circle,#8b5cf6,transparent 65%);bottom:-18vw;left:-12vw;animation:drift 28s ease-in-out infinite reverse}
+  .orb-3{width:30vw;height:30vw;background:radial-gradient(circle,#06b6d4,transparent 65%);top:30%;left:35%;animation:drift 18s ease-in-out infinite 5s}
+  @keyframes drift{0%,100%{transform:translate(0,0)}33%{transform:translate(2vw,-3vw)}66%{transform:translate(-3vw,2vw)}}
+
+  .page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:2vw 3.5vw 1vw}
+
+  /* ── Header ── */
+  .header{
+    text-align:center;padding-bottom:1.2vw;margin-bottom:1.2vw;
+    border-bottom:1px solid rgba(255,255,255,.07);
+    animation:slideDown .55s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes slideDown{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:translateY(0)}}
+
+  .header-eyebrow{
+    display:inline-flex;align-items:center;gap:.5vw;
+    padding:.25vw 1vw;border-radius:100px;margin-bottom:.5vw;
+    background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);
+    font-size:clamp(8px,.85vw,13px);font-weight:700;letter-spacing:.15em;
+    text-transform:uppercase;color:#93c5fd;
+  }
+  .live-dot{width:.45vw;height:.45vw;border-radius:50%;background:#60a5fa;animation:blink 1.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+
+  .header h1{
+    font-size:clamp(20px,3vw,48px);font-weight:900;line-height:1;letter-spacing:-.03em;
+    background:linear-gradient(120deg,#f8fafc 0%,#bfdbfe 60%,#818cf8 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .header-date{
+    font-size:clamp(10px,1.1vw,17px);color:#94a3b8;margin-top:.3vw;font-weight:500;
+  }
+
+  /* ── Grid of items ── */
+  .menu{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:1vw 2.5vw;align-content:start;min-height:0}
+
+  .item{
+    display:flex;align-items:center;justify-content:space-between;gap:.8vw;
+    padding:.7vw 1vw;
+    border-radius:.9vw;
+    background:linear-gradient(135deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.025) 100%);
+    border:1px solid rgba(255,255,255,.07);
+    box-shadow:0 4px 20px rgba(0,0,0,.25);
+    animation:popIn .5s cubic-bezier(.16,1,.3,1) both;
+    transition:border-color .3s;
+  }
+  .item:hover{border-color:rgba(96,165,250,.3)}
+  @keyframes popIn{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+  .item-left{display:flex;align-items:center;gap:.7vw;min-width:0}
+
+  .item-num{
+    font-size:clamp(9px,.95vw,15px);font-weight:800;
+    color:#1e40af;
+    background:linear-gradient(135deg,#60a5fa,#a78bfa);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    font-variant-numeric:tabular-nums;flex-shrink:0;
+    width:2.2em;text-align:right;
+  }
+
+  .item-name{
+    font-size:clamp(12px,1.45vw,23px);font-weight:600;color:#e2e8f0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+
+  .item-kcal{
+    flex-shrink:0;
+    display:flex;align-items:baseline;gap:.2vw;
+    font-size:clamp(11px,1.3vw,20px);font-weight:700;
+    color:#60a5fa;font-variant-numeric:tabular-nums;
+  }
+  .item-kcal small{font-size:.65em;color:#64748b;font-weight:500}
+
+  .empty{
+    grid-column:1/-1;text-align:center;color:#475569;
+    font-style:italic;font-size:clamp(12px,1.4vw,22px);padding:4vw 0;
+  }
+
+  /* ── Footer ── */
+  .footer{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.5vw 0 .3vw;
+    border-top:1px solid rgba(255,255,255,.06);
+    font-size:clamp(8px,.8vw,12px);color:rgba(148,163,184,.4);
+    flex-shrink:0;
+  }
+  .clock{font-variant-numeric:tabular-nums;font-weight:600;color:rgba(148,163,184,.5)}
+</style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="page">
+    <div class="header">
+      <div class="header-eyebrow">
+        <span class="live-dot"></span>
+        Restaurante Universitário &nbsp;·&nbsp; ${escHtml(unidadeLabel)}
+      </div>
+      <h1>Cardápio do Dia</h1>
+      <div class="header-date">${escHtml(dateDisplay)}</div>
+    </div>
+
+    <div class="menu">
+      ${items.length === 0 ? emptyHtml : [
+        ...col1.map((item, i) => renderItem(item, i)),
+        ...col2.map((item, i) => renderItem(item, col1.length + i)),
+      ].join('')}
+    </div>
+
+    <div class="footer">
+      <span>UFPel — Cardápio sujeito a alterações</span>
+      <span class="clock" id="clock"></span>
+    </div>
+  </div>
+
+  <script>
+    !function(){
+      var c=document.getElementById('clock');
+      if(!c)return;
+      function u(){c.textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+      u();setInterval(u,1000);
+    }();
+  </script>
+</body>
+</html>`
+  }
 
     return `<!doctype html>
 <html lang="pt-BR">
