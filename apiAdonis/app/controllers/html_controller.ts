@@ -513,20 +513,22 @@ export default class HtmlController {
 
     const safeBg = sanitizeCssColor(bgColor, '#0f172a')
 
-    // Use almoco if available, fall back to janta (they're the same menu)
-    const items = data.almoco.length > 0 ? data.almoco : data.janta
+    // Use almoco if available, fall back to janta. Deduplicate by name.
+    const raw = data.almoco.length > 0 ? data.almoco : data.janta
+    const seen = new Set<string>()
+    const items = raw.filter((item) => {
+      const key = item.nome.trim().toUpperCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
 
     const dateDisplay = (() => {
       const parts = data.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
       if (!parts) return data.data
       const weekdays = [
-        'Domingo',
-        'Segunda-feira',
-        'Terça-feira',
-        'Quarta-feira',
-        'Quinta-feira',
-        'Sexta-feira',
-        'Sábado',
+        'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
+        'Quinta-feira', 'Sexta-feira', 'Sábado',
       ]
       const months = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -546,21 +548,11 @@ export default class HtmlController {
           ? 'Campus Capão do Leão'
           : data.unidade
 
-    // Split items into two columns for layout
-    const mid = Math.ceil(items.length / 2)
-    const col1 = items.slice(0, mid)
-    const col2 = items.slice(mid)
-
-    const renderItem = (item: (typeof items)[0], i: number) =>
-      `<div class="item" style="animation-delay:${0.06 * i}s">
-        <div class="item-left">
-          <span class="item-num">${String(i + 1).padStart(2, '0')}</span>
-          <span class="item-name">${escHtml(item.nome)}</span>
-        </div>
-        <span class="item-kcal">${escHtml(item.kcal)}<small>kcal</small></span>
+    const renderItem = (item: (typeof items)[0]) =>
+      `<div class="item">
+        <span class="item-name">${escHtml(item.nome)}</span>
+        ${item.kcal && item.kcal !== '0' ? `<span class="item-kcal">${escHtml(item.kcal)} <small>kcal</small></span>` : ''}
       </div>`
-
-    const emptyHtml = `<div class="empty">Cardápio não disponível para hoje.</div>`
 
     return `<!doctype html>
 <html lang="pt-BR">
@@ -569,139 +561,109 @@ export default class HtmlController {
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Cardápio RU</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;cursor:none!important}
   html,body{height:100%;overflow:hidden}
-
   body{
     background:${safeBg};
     color:#f1f5f9;
-    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     height:100vh;
     display:flex;
     flex-direction:column;
-    position:relative;
-    overflow:hidden;
+    padding:2vw 3vw 1.5vw;
   }
-
-  /* Orbs */
-  .orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.12;z-index:0;pointer-events:none}
-  .orb-1{width:55vw;height:55vw;background:radial-gradient(circle,#3b82f6,transparent 65%);top:-20vw;right:-15vw;animation:drift 22s ease-in-out infinite}
-  .orb-2{width:45vw;height:45vw;background:radial-gradient(circle,#8b5cf6,transparent 65%);bottom:-18vw;left:-12vw;animation:drift 28s ease-in-out infinite reverse}
-  .orb-3{width:30vw;height:30vw;background:radial-gradient(circle,#06b6d4,transparent 65%);top:30%;left:35%;animation:drift 18s ease-in-out infinite 5s}
-  @keyframes drift{0%,100%{transform:translate(0,0)}33%{transform:translate(2vw,-3vw)}66%{transform:translate(-3vw,2vw)}}
-
-  .page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:2vw 3.5vw 1vw}
-
-  /* ── Header ── */
   .header{
-    text-align:center;padding-bottom:1.2vw;margin-bottom:1.2vw;
-    border-bottom:1px solid rgba(255,255,255,.07);
-    animation:slideDown .55s cubic-bezier(.16,1,.3,1) both;
+    text-align:center;
+    padding-bottom:1.2vw;
+    margin-bottom:1.2vw;
+    border-bottom:1px solid rgba(255,255,255,.1);
+    flex-shrink:0;
   }
-  @keyframes slideDown{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:translateY(0)}}
-
-  .header-eyebrow{
-    display:inline-flex;align-items:center;gap:.5vw;
-    padding:.25vw 1vw;border-radius:100px;margin-bottom:.5vw;
-    background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);
-    font-size:clamp(8px,.85vw,13px);font-weight:700;letter-spacing:.15em;
-    text-transform:uppercase;color:#93c5fd;
+  .header-tag{
+    font-size:clamp(9px,.9vw,13px);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    color:#64748b;
+    margin-bottom:.4vw;
   }
-  .live-dot{width:.45vw;height:.45vw;border-radius:50%;background:#60a5fa;animation:blink 1.4s ease-in-out infinite}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
-
   .header h1{
-    font-size:clamp(20px,3vw,48px);font-weight:900;line-height:1;letter-spacing:-.03em;
-    background:linear-gradient(120deg,#f8fafc 0%,#bfdbfe 60%,#818cf8 100%);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    font-size:clamp(24px,3.2vw,52px);
+    font-weight:800;
+    color:#f8fafc;
+    line-height:1.1;
   }
   .header-date{
-    font-size:clamp(10px,1.1vw,17px);color:#94a3b8;margin-top:.3vw;font-weight:500;
+    font-size:clamp(11px,1.1vw,16px);
+    color:#94a3b8;
+    margin-top:.3vw;
   }
-
-  /* ── Grid of items ── */
-  .menu{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:1vw 2.5vw;align-content:start;min-height:0}
-
+  .menu{
+    flex:1;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:.5vw 2.5vw;
+    align-content:start;
+    min-height:0;
+  }
   .item{
-    display:flex;align-items:center;justify-content:space-between;gap:.8vw;
-    padding:.7vw 1vw;
-    border-radius:.9vw;
-    background:linear-gradient(135deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.025) 100%);
-    border:1px solid rgba(255,255,255,.07);
-    box-shadow:0 4px 20px rgba(0,0,0,.25);
-    animation:popIn .5s cubic-bezier(.16,1,.3,1) both;
-    transition:border-color .3s;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.5vw;
+    padding:.55vw .7vw;
+    border-radius:.4vw;
+    border-bottom:1px solid rgba(255,255,255,.05);
   }
-  .item:hover{border-color:rgba(96,165,250,.3)}
-  @keyframes popIn{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
-
-  .item-left{display:flex;align-items:center;gap:.7vw;min-width:0}
-
-  .item-num{
-    font-size:clamp(9px,.95vw,15px);font-weight:800;
-    color:#1e40af;
-    background:linear-gradient(135deg,#60a5fa,#a78bfa);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-    font-variant-numeric:tabular-nums;flex-shrink:0;
-    width:2.2em;text-align:right;
-  }
-
+  .item:nth-child(odd){background:rgba(255,255,255,.04)}
   .item-name{
-    font-size:clamp(12px,1.45vw,23px);font-weight:600;color:#e2e8f0;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-size:clamp(12px,1.4vw,22px);
+    font-weight:500;
+    color:#e2e8f0;
   }
-
   .item-kcal{
     flex-shrink:0;
-    display:flex;align-items:baseline;gap:.2vw;
-    font-size:clamp(11px,1.3vw,20px);font-weight:700;
-    color:#60a5fa;font-variant-numeric:tabular-nums;
+    font-size:clamp(11px,1.1vw,17px);
+    font-weight:700;
+    color:#38bdf8;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
   }
-  .item-kcal small{font-size:.65em;color:#64748b;font-weight:500}
-
+  .item-kcal small{font-size:.75em;font-weight:400;color:#475569}
   .empty{
-    grid-column:1/-1;text-align:center;color:#475569;
-    font-style:italic;font-size:clamp(12px,1.4vw,22px);padding:4vw 0;
+    grid-column:1/-1;
+    text-align:center;
+    color:#475569;
+    font-style:italic;
+    font-size:clamp(12px,1.4vw,20px);
+    padding:3vw 0;
   }
-
-  /* ── Footer ── */
   .footer{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:.5vw 0 .3vw;
-    border-top:1px solid rgba(255,255,255,.06);
-    font-size:clamp(8px,.8vw,12px);color:rgba(148,163,184,.4);
+    display:flex;
+    justify-content:space-between;
+    padding:.5vw 0 0;
+    border-top:1px solid rgba(255,255,255,.07);
+    font-size:clamp(8px,.8vw,12px);
+    color:#334155;
     flex-shrink:0;
   }
-  .clock{font-variant-numeric:tabular-nums;font-weight:600;color:rgba(148,163,184,.5)}
+  .clock{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
+  <div class="header">
+    <div class="header-tag">Restaurante Universitário · ${escHtml(unidadeLabel)}</div>
+    <h1>Cardápio do Dia</h1>
+    <div class="header-date">${escHtml(dateDisplay)}</div>
+  </div>
 
-  <div class="page">
-    <div class="header">
-      <div class="header-eyebrow">
-        <span class="live-dot"></span>
-        Restaurante Universitário &nbsp;·&nbsp; ${escHtml(unidadeLabel)}
-      </div>
-      <h1>Cardápio do Dia</h1>
-      <div class="header-date">${escHtml(dateDisplay)}</div>
-    </div>
+  <div class="menu">
+    ${items.length === 0 ? '<div class="empty">Cardápio não disponível para hoje.</div>' : items.map(renderItem).join('')}
+  </div>
 
-    <div class="menu">
-      ${items.length === 0 ? emptyHtml : [
-        ...col1.map((item, i) => renderItem(item, i)),
-        ...col2.map((item, i) => renderItem(item, col1.length + i)),
-      ].join('')}
-    </div>
-
-    <div class="footer">
-      <span>UFPel — Cardápio sujeito a alterações</span>
-      <span class="clock" id="clock"></span>
-    </div>
+  <div class="footer">
+    <span>UFPel — Cardápio sujeito a alterações</span>
+    <span class="clock" id="clock"></span>
   </div>
 
   <script>
@@ -748,6 +710,15 @@ export default class HtmlController {
     await MediaService.writeFile(baseName, html)
     const fileUrl = MediaService.getFileUrl(baseName)
 
+    // Schedule is active only on today's weekday (cardápio is only valid for the day it was created)
+    const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+    const todaySchedule = {
+      days: [dayNames[new Date().getDay()]],
+      start: '00:00',
+      end: '23:59',
+      tz: 'America/Sao_Paulo',
+    }
+
     const safeBg = sanitizeCssColor(bgColor || '#0f172a', '#0f172a')
     const htmlPlayer = await HtmlPlayer.create({
       fileType: 'cardapio-ru',
@@ -761,7 +732,7 @@ export default class HtmlController {
       textAlign: 'left',
       paddingPx: DEFAULT_HTML_PADDING,
       maxWidthPx: DEFAULT_HTML_MAX_WIDTH,
-      schedule: this.normalizeSchedule(schedule),
+      schedule: todaySchedule,
       lastModified: auth.user?.id || 0,
     })
 
