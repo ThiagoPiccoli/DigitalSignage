@@ -561,7 +561,9 @@ export default class HtmlController {
         ? 'Campus Centro'
         : data.unidade === 'CAMPUS'
           ? 'Campus Capão do Leão'
-          : data.unidade
+          : data.unidade === 'ANGLO'
+            ? 'Campus Anglo'
+            : data.unidade
 
     // Auto-select columns: 3 for ≤9 items, 4 for more
     const cols = items.length <= 9 ? 3 : 4

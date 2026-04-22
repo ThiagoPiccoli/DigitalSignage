@@ -24,7 +24,8 @@ interface CardapioRuDialogProps {
 
 const UNIDADES = [
   { value: 'CENTRO', label: 'Centro' },
-  { value: 'CAMPUS', label: 'Campus' },
+  { value: 'CAMPUS', label: 'Capão do Leão' },
+  { value: 'ANGLO', label: 'Anglo' },
 ];
 
 export default function CardapioRuDialog({
