@@ -527,12 +527,27 @@ export default class HtmlController {
       const parts = data.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
       if (!parts) return data.data
       const weekdays = [
-        'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
-        'Quinta-feira', 'Sexta-feira', 'Sábado',
+        'Domingo',
+        'Segunda-feira',
+        'Terça-feira',
+        'Quarta-feira',
+        'Quinta-feira',
+        'Sexta-feira',
+        'Sábado',
       ]
       const months = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+        'Janeiro',
+        'Fevereiro',
+        'Março',
+        'Abril',
+        'Maio',
+        'Junho',
+        'Julho',
+        'Agosto',
+        'Setembro',
+        'Outubro',
+        'Novembro',
+        'Dezembro',
       ]
       const day = Number.parseInt(parts[1], 10)
       const month = Number.parseInt(parts[2], 10) - 1
@@ -548,11 +563,18 @@ export default class HtmlController {
           ? 'Campus Capão do Leão'
           : data.unidade
 
-    const renderItem = (item: (typeof items)[0]) =>
-      `<div class="item">
-        <span class="item-name">${escHtml(item.nome)}</span>
-        ${item.kcal && item.kcal !== '0' ? `<span class="item-kcal">${escHtml(item.kcal)} <small>kcal</small></span>` : ''}
+    // Auto-select columns: 3 for ≤9 items, 4 for more
+    const cols = items.length <= 9 ? 3 : 4
+
+    const renderItem = (item: (typeof items)[0]) => {
+      const hasKcal = item.kcal && item.kcal !== '0'
+      const hasDesc = item.ingredientes && item.ingredientes.trim().length > 0
+      return `<div class="card">
+        <div class="card-name">${escHtml(item.nome)}</div>
+        ${hasDesc ? `<div class="card-desc">${escHtml(item.ingredientes)}</div>` : ''}
+        ${hasKcal ? `<div class="card-kcal">${escHtml(item.kcal)} <span class="kcal-label">kcal</span></div>` : ''}
       </div>`
+    }
 
     return `<!doctype html>
 <html lang="pt-BR">
@@ -565,84 +587,96 @@ export default class HtmlController {
   html,body{height:100%;overflow:hidden}
   body{
     background:${safeBg};
-    color:#f1f5f9;
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     height:100vh;
     display:flex;
     flex-direction:column;
     padding:2vw 3vw 1.5vw;
+    gap:1.5vw;
   }
+
+  /* ── Header ── */
   .header{
     text-align:center;
-    padding-bottom:1.2vw;
-    margin-bottom:1.2vw;
-    border-bottom:1px solid rgba(255,255,255,.1);
     flex-shrink:0;
   }
-  .header-tag{
-    font-size:clamp(9px,.9vw,13px);
+  .header-sub{
+    font-size:clamp(9px,.9vw,14px);
     font-weight:600;
     text-transform:uppercase;
-    letter-spacing:.12em;
+    letter-spacing:.14em;
     color:#64748b;
-    margin-bottom:.4vw;
+    margin-bottom:.5vw;
   }
   .header h1{
-    font-size:clamp(24px,3.2vw,52px);
+    font-size:clamp(28px,4vw,64px);
     font-weight:800;
     color:#f8fafc;
-    line-height:1.1;
+    line-height:1;
+    margin-bottom:.25vw;
   }
   .header-date{
-    font-size:clamp(11px,1.1vw,16px);
+    font-size:clamp(11px,1.1vw,17px);
     color:#94a3b8;
-    margin-top:.3vw;
   }
-  .menu{
+
+  /* ── Card grid ── */
+  .grid{
     flex:1;
     display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:.5vw 2.5vw;
+    grid-template-columns:repeat(${cols},1fr);
+    gap:1.2vw;
     align-content:start;
     min-height:0;
   }
-  .item{
+  .card{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:.8vw;
+    padding:1.1vw 1.3vw;
     display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:.5vw;
-    padding:.55vw .7vw;
-    border-radius:.4vw;
-    border-bottom:1px solid rgba(255,255,255,.05);
+    flex-direction:column;
+    gap:.35vw;
   }
-  .item:nth-child(odd){background:rgba(255,255,255,.04)}
-  .item-name{
-    font-size:clamp(12px,1.4vw,22px);
-    font-weight:500;
-    color:#e2e8f0;
+  .card-name{
+    font-size:clamp(13px,1.5vw,24px);
+    font-weight:700;
+    color:#f1f5f9;
+    line-height:1.2;
   }
-  .item-kcal{
-    flex-shrink:0;
-    font-size:clamp(11px,1.1vw,17px);
+  .card-desc{
+    font-size:clamp(10px,1vw,15px);
+    color:#94a3b8;
+    line-height:1.4;
+    flex:1;
+  }
+  .card-kcal{
+    font-size:clamp(12px,1.3vw,20px);
     font-weight:700;
     color:#38bdf8;
+    margin-top:.2vw;
     font-variant-numeric:tabular-nums;
-    white-space:nowrap;
   }
-  .item-kcal small{font-size:.75em;font-weight:400;color:#475569}
+  .kcal-label{
+    font-size:.7em;
+    font-weight:400;
+    color:#475569;
+  }
   .empty{
     grid-column:1/-1;
     text-align:center;
     color:#475569;
     font-style:italic;
-    font-size:clamp(12px,1.4vw,20px);
-    padding:3vw 0;
+    font-size:clamp(13px,1.4vw,22px);
+    padding:4vw 0;
   }
+
+  /* ── Footer ── */
   .footer{
     display:flex;
     justify-content:space-between;
-    padding:.5vw 0 0;
     border-top:1px solid rgba(255,255,255,.07);
+    padding-top:.6vw;
     font-size:clamp(8px,.8vw,12px);
     color:#334155;
     flex-shrink:0;
@@ -652,12 +686,12 @@ export default class HtmlController {
 </head>
 <body>
   <div class="header">
-    <div class="header-tag">Restaurante Universitário · ${escHtml(unidadeLabel)}</div>
+    <div class="header-sub">Restaurante Universitário · ${escHtml(unidadeLabel)}</div>
     <h1>Cardápio do Dia</h1>
     <div class="header-date">${escHtml(dateDisplay)}</div>
   </div>
 
-  <div class="menu">
+  <div class="grid">
     ${items.length === 0 ? '<div class="empty">Cardápio não disponível para hoje.</div>' : items.map(renderItem).join('')}
   </div>
 

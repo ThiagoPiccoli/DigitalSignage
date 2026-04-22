@@ -1,5 +1,4 @@
 import {
-  Box,
   Button,
   Dialog,
   DialogActions,
@@ -9,17 +8,12 @@ import {
   TextField,
 } from '@mui/material';
 import React from 'react';
-import ScheduleFields, {
-  DEFAULT_SCHEDULE,
-  type Schedule,
-} from './ScheduleFields';
 
 export type CardapioRuRow = {
   id?: number;
   nome: string;
   unidade: string;
   bgColor: string;
-  schedule: Schedule;
 };
 
 interface CardapioRuDialogProps {
@@ -46,7 +40,6 @@ export default function CardapioRuDialog({
       row
         ? {
             ...row,
-            schedule: row.schedule ?? DEFAULT_SCHEDULE,
             bgColor: row.bgColor || '#0f172a',
             unidade: row.unidade || 'CENTRO',
           }
@@ -102,18 +95,6 @@ export default function CardapioRuDialog({
           onChange={handleChange('bgColor')}
           slotProps={{ inputLabel: { shrink: true } }}
         />
-        {values && (
-          <Box sx={{ mt: 1 }}>
-            <ScheduleFields
-              value={values.schedule}
-              onChange={schedule =>
-                setValues(current =>
-                  current ? { ...current, schedule } : current,
-                )
-              }
-            />
-          </Box>
-        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">

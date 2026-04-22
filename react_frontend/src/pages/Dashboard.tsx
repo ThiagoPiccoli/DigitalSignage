@@ -488,7 +488,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         unidade: values.unidade,
         date: today,
         bgColor: values.bgColor,
-        schedule: values.schedule,
       };
 
       const isEditing = Boolean(values.id);
@@ -777,7 +776,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                                   nome: row.nome,
                                   unidade: meta.unidade,
                                   bgColor: row.bgColor || '#0f172a',
-                                  schedule: row.schedule || DEFAULT_SCHEDULE,
                                 });
                               } else {
                                 setEditRow(row);
@@ -1059,7 +1057,6 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 nome: 'Cardápio RU',
                 unidade: 'CENTRO',
                 bgColor: '#0f172a',
-                schedule: DEFAULT_SCHEDULE,
               }),
           },
           { label: 'Vídeo', onClick: () => setUploadType('video') },
