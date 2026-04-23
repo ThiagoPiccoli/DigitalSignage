@@ -86,7 +86,7 @@ export default class HtmlController {
       bgColor = '#000000',
       textColor = '#ffffff',
       fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
-      fontSizePx = 64,
+      fontSizePx = 80,
       textAlign = 'center',
       paddingPx = DEFAULT_HTML_PADDING,
       maxWidthPx = DEFAULT_HTML_MAX_WIDTH,
@@ -156,14 +156,14 @@ export default class HtmlController {
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
   .badge-text{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#93c5fd}
   .title{
-    font-size:${Number(fontSizePx) || 64}px;
+    font-size:${Number(fontSizePx) || 80}px;
     font-weight:800;letter-spacing:-.02em;line-height:1.15;
     text-align:${align};color:#f8fafc;
     text-shadow:0 2px 20px rgba(0,0,0,0.4);
   }
   .divider{width:80px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.4),transparent)}
   .body{
-    font-size:${Math.max(Math.round((Number(fontSizePx) || 64) * 0.6), 24)}px;
+    font-size:${Math.max(Math.round((Number(fontSizePx) || 80) * 0.6), 28)}px;
     font-weight:400;line-height:1.6;text-align:${align};
     color:rgba(203,213,225,0.85);max-width:700px;
     word-wrap:break-word;overflow-wrap:break-word;
@@ -244,7 +244,7 @@ export default class HtmlController {
       fontFamily:
         fontFamily ||
         'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
-      fontSizePx: fontSizePx || 64,
+      fontSizePx: fontSizePx || 80,
       textAlign: textAlign || 'center',
       paddingPx: paddingPx,
       maxWidthPx: maxWidthPx,
@@ -320,12 +320,12 @@ export default class HtmlController {
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:${safeFont};display:flex;align-items:center;justify-content:center}
   .wrap{box-sizing:border-box;width:100%;max-width:1200px;padding:24px;text-align:center}
-  h1{margin:0 0 12px;font-size:96px;letter-spacing:.3px}
-  .when{opacity:.85;margin-bottom:20px;font-size:clamp(16px,2.8vw,22px)}
+  h1{margin:0 0 12px;font-size:clamp(80px,12vw,140px);letter-spacing:.3px}
+  .when{opacity:.85;margin-bottom:20px;font-size:clamp(20px,3.2vw,28px)}
   .clock{display:flex;gap:14px;justify-content:center;align-items:stretch;flex-wrap:wrap}
   .block{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;min-width:120px;padding:16px 10px}
-  .num{font-variant-numeric:tabular-nums;font-size:clamp(40px,10vw,100px);font-weight:800;line-height:1;color:var(--accent);text-shadow:0 2px 14px rgba(34,197,94,.25)}
-  .lab{margin-top:8px;font-size:clamp(14px,2.6vw,20px);opacity:.85}
+  .num{font-variant-numeric:tabular-nums;font-size:clamp(56px,13vw,130px);font-weight:800;line-height:1;color:var(--accent);text-shadow:0 2px 14px rgba(34,197,94,.25)}
+  .lab{margin-top:8px;font-size:clamp(18px,3vw,26px);opacity:.85}
   .done{margin-top:14px;font-weight:700;color:var(--accent);font-size:clamp(16px,3.6vw,22px)}
   *{cursor:none!important}
 </style>
@@ -611,7 +611,7 @@ export default class HtmlController {
     margin-bottom:.5vw;
   }
   .header h1{
-    font-size:clamp(28px,4vw,64px);
+    font-size:clamp(36px,5vw,80px);
     font-weight:800;
     color:#f8fafc;
     line-height:1;
@@ -641,19 +641,19 @@ export default class HtmlController {
     gap:.35vw;
   }
   .card-name{
-    font-size:clamp(13px,1.5vw,24px);
+    font-size:clamp(16px,1.9vw,30px);
     font-weight:700;
     color:#f1f5f9;
     line-height:1.2;
   }
   .card-desc{
-    font-size:clamp(10px,1vw,15px);
+    font-size:clamp(12px,1.3vw,19px);
     color:#94a3b8;
     line-height:1.4;
     flex:1;
   }
   .card-kcal{
-    font-size:clamp(12px,1.3vw,20px);
+    font-size:clamp(14px,1.6vw,24px);
     font-weight:700;
     color:#38bdf8;
     margin-top:.2vw;
