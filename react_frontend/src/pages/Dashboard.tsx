@@ -72,7 +72,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   type ApiHtmlSignage = {
     id: number;
     title: string;
-    fileType: 'aviso' | 'contador' | 'cardapio-ru';
+    fileType: 'aviso' | 'contador' | 'cardapio-ru' | 'html-raw';
     bodyHtml: string;
     htmlUrl: string;
     bgColor: string;
@@ -101,7 +101,13 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   type DashboardRow = Row & {
     id: number;
     source: 'html' | 'player';
-    fileType: 'aviso' | 'contador' | 'video' | 'image' | 'cardapio-ru';
+    fileType:
+      | 'aviso'
+      | 'contador'
+      | 'video'
+      | 'image'
+      | 'cardapio-ru'
+      | 'html-raw';
     bgColor?: string;
   };
 
@@ -433,14 +439,19 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
 
   const handleAvisoSave = async (values: AvisoRow) => {
     try {
+      const body: Record<string, unknown> = {
+        title: values.nome,
+        schedule: values.schedule,
+      };
+      if (values.rawHtml?.trim()) {
+        body.rawHtml = values.rawHtml;
+      } else {
+        body.bodyHtml = values.aviso;
+        body.bgColor = values.bgColor;
+      }
       const res = await api('/html', {
         method: 'POST',
-        body: JSON.stringify({
-          title: values.nome,
-          bodyHtml: values.aviso,
-          bgColor: values.bgColor,
-          schedule: values.schedule,
-        }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         await fetchSignage();
@@ -766,6 +777,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                             variant="outlined"
                             color="primary"
                             size="small"
+                            disabled={row.fileType === 'html-raw'}
                             onClick={() => {
                               if (row.fileType === 'cardapio-ru') {
                                 const meta = extractCardapioMeta(

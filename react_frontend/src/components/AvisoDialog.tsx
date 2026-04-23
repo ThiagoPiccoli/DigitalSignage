@@ -1,12 +1,19 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
+  Switch,
   TextField,
+  Typography,
 } from '@mui/material';
+import { ExpandMore } from '@mui/icons-material';
 import React from 'react';
 import ScheduleFields, {
   DEFAULT_SCHEDULE,
@@ -18,6 +25,7 @@ export type AvisoRow = {
   aviso: string;
   schedule: Schedule;
   bgColor: string;
+  rawHtml?: string;
 };
 
 interface AvisoDialogProps {
@@ -32,18 +40,25 @@ export default function AvisoDialog({
   onSave,
 }: AvisoDialogProps) {
   const [values, setValues] = React.useState<AvisoRow | null>(null);
-  const isSaveDisabled = !values?.nome.trim() || !values?.aviso.trim();
+  const [useRawHtml, setUseRawHtml] = React.useState(false);
+
+  const isSaveDisabled =
+    !values?.nome.trim() ||
+    (!useRawHtml && !values?.aviso.trim()) ||
+    (useRawHtml && !values?.rawHtml?.trim());
 
   React.useEffect(() => {
-    setValues(
-      row
-        ? {
-            ...row,
-            schedule: row.schedule ?? DEFAULT_SCHEDULE,
-            bgColor: row.bgColor || '#000000',
-          }
-        : null,
-    );
+    if (row) {
+      setValues({
+        ...row,
+        schedule: row.schedule ?? DEFAULT_SCHEDULE,
+        bgColor: row.bgColor || '#000000',
+        rawHtml: '',
+      });
+    } else {
+      setValues(null);
+    }
+    setUseRawHtml(false);
   }, [row]);
 
   const handleChange =
@@ -66,24 +81,28 @@ export default function AvisoDialog({
           helperText="Obrigatório"
           sx={{ mt: 1 }}
         />
-        <TextField
-          label="Mensagem do Aviso"
-          fullWidth
-          multiline
-          minRows={3}
-          value={values?.aviso ?? ''}
-          onChange={handleChange('aviso')}
-          helperText="Obrigatório"
-        />
-        <TextField
-          label="Cor de fundo"
-          fullWidth
-          type="color"
-          value={values?.bgColor ?? '#000000'}
-          onChange={handleChange('bgColor')}
-          helperText="Cor de fundo do aviso"
-          slotProps={{ inputLabel: { shrink: true } }}
-        />
+        {!useRawHtml && (
+          <>
+            <TextField
+              label="Mensagem do Aviso"
+              fullWidth
+              multiline
+              minRows={3}
+              value={values?.aviso ?? ''}
+              onChange={handleChange('aviso')}
+              helperText="Obrigatório"
+            />
+            <TextField
+              label="Cor de fundo"
+              fullWidth
+              type="color"
+              value={values?.bgColor ?? '#000000'}
+              onChange={handleChange('bgColor')}
+              helperText="Cor de fundo do aviso"
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </>
+        )}
         {values && (
           <Box sx={{ mt: 1 }}>
             <ScheduleFields
@@ -96,6 +115,56 @@ export default function AvisoDialog({
             />
           </Box>
         )}
+
+        <Accordion
+          elevation={0}
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: '8px !important',
+            '&:before': { display: 'none' },
+          }}
+        >
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="body2" fontWeight={600}>
+              Opções Avançadas
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails
+            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useRawHtml}
+                  onChange={e => {
+                    setUseRawHtml(e.target.checked);
+                    if (!e.target.checked) {
+                      setValues(v => (v ? { ...v, rawHtml: '' } : v));
+                    }
+                  }}
+                />
+              }
+              label="Usar HTML personalizado"
+            />
+            {useRawHtml && (
+              <TextField
+                label="Código HTML"
+                fullWidth
+                multiline
+                minRows={8}
+                value={values?.rawHtml ?? ''}
+                onChange={handleChange('rawHtml')}
+                helperText="O HTML será renderizado diretamente no player. Este aviso não poderá ser editado após o envio."
+                slotProps={{
+                  input: {
+                    sx: { fontFamily: 'monospace', fontSize: '0.85rem' },
+                  },
+                }}
+              />
+            )}
+          </AccordionDetails>
+        </Accordion>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">
