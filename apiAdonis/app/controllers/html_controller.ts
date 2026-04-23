@@ -86,7 +86,7 @@ export default class HtmlController {
       bgColor = '#000000',
       textColor = '#ffffff',
       fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
-      fontSizePx = 80,
+      fontSizePx = 64,
       textAlign = 'center',
       paddingPx = DEFAULT_HTML_PADDING,
       maxWidthPx = DEFAULT_HTML_MAX_WIDTH,
@@ -163,7 +163,7 @@ export default class HtmlController {
   }
   .divider{width:80px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.4),transparent)}
   .body{
-    font-size:${Math.max(Math.round((Number(fontSizePx) || 80) * 0.6), 24)}px;
+    font-size:${Math.max(Math.round((Number(fontSizePx) || 64) * 0.6), 24)}px;
     font-weight:400;line-height:1.6;text-align:${align};
     color:rgba(203,213,225,0.85);max-width:700px;
     word-wrap:break-word;overflow-wrap:break-word;
@@ -200,7 +200,6 @@ export default class HtmlController {
       paddingPx = DEFAULT_HTML_PADDING,
       maxWidthPx = DEFAULT_HTML_MAX_WIDTH,
       schedule,
-      rawHtml,
     } = request.only([
       'filename',
       'title',
@@ -213,35 +212,11 @@ export default class HtmlController {
       'paddingPx',
       'maxWidthPx',
       'schedule',
-      'rawHtml',
     ])
 
     const baseName = MediaService.sanitizeFilename(filename || '') || `aviso-${Date.now()}.html`
     if (!MediaService.isHtmlFile(baseName)) {
       return response.badRequest({ error: 'filename must end with .html' })
-    }
-
-    // Raw HTML mode: write as-is and mark as non-editable
-    if (rawHtml && typeof rawHtml === 'string') {
-      if (!title) return response.badRequest({ error: 'title is required' })
-      await MediaService.writeFile(baseName, rawHtml)
-      const fileUrl = MediaService.getFileUrl(baseName)
-      const htmlPlayer = await HtmlPlayer.create({
-        fileType: 'html-raw',
-        title: title,
-        htmlUrl: fileUrl,
-        bodyHtml: '',
-        bgColor: '#000000',
-        textColor: '#ffffff',
-        fontFamily: 'system-ui',
-        fontSizePx: 80,
-        textAlign: 'center',
-        paddingPx: DEFAULT_HTML_PADDING,
-        maxWidthPx: DEFAULT_HTML_MAX_WIDTH,
-        schedule: this.normalizeSchedule(schedule),
-        lastModified: auth.user?.id || 0,
-      })
-      return response.created({ ok: true, file: baseName, player: htmlPlayer })
     }
 
     const html = this.makeHtmlDoc({
@@ -269,7 +244,7 @@ export default class HtmlController {
       fontFamily:
         fontFamily ||
         'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
-      fontSizePx: fontSizePx || 80,
+      fontSizePx: fontSizePx || 64,
       textAlign: textAlign || 'center',
       paddingPx: paddingPx,
       maxWidthPx: maxWidthPx,
@@ -479,10 +454,6 @@ export default class HtmlController {
 
   public async updateHtml({ request, response, params, auth }: HttpContext) {
     const htmlPlayer = await HtmlPlayer.findOrFail(params.id)
-
-    if (htmlPlayer.fileType === 'html-raw') {
-      return response.badRequest({ error: 'HTML personalizado não pode ser editado' })
-    }
 
     const updateData = request.only([
       'title',
