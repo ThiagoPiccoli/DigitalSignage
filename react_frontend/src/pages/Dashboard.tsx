@@ -182,11 +182,12 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
   };
 
   const mapTypeToLabel = (
-    type: 'aviso' | 'contador' | 'video' | 'image' | 'cardapio-ru',
+    type: 'aviso' | 'contador' | 'video' | 'image' | 'cardapio-ru' | 'html-raw',
   ): Row['tipo'] => {
     if (type === 'aviso') return 'Aviso';
     if (type === 'contador') return 'Contador';
     if (type === 'cardapio-ru') return 'Cardápio RU';
+    if (type === 'html-raw') return 'Aviso';
     if (type === 'video') return 'Vídeo';
     return 'Imagem';
   };
