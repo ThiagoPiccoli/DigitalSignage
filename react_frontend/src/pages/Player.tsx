@@ -132,12 +132,8 @@ export default function Player() {
     };
   }, [navigate]);
 
-  const goToNext = useCallback(() => {
-    setCurrentIndex(prev => (prev + 1) % playlistItems.length);
-  }, [playlistItems.length]);
-
-  const loadContent = useCallback(async () => {
-    setLoading(true);
+  const loadContent = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
 
     try {
@@ -235,17 +231,28 @@ export default function Player() {
       console.error(fetchError);
       setError('Falha ao carregar os conteúdos. Tente novamente em instantes.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
+
+  const goToNext = useCallback(() => {
+    const isLastItem = currentIndex === playlistItems.length - 1;
+    if (isLastItem) {
+      // Playlist completed a full loop — refresh content from API
+      loadContent(true);
+    } else {
+      setCurrentIndex(prev => prev + 1);
+    }
+  }, [currentIndex, playlistItems.length, loadContent]);
 
   useEffect(() => {
     loadContent();
 
-    // Re-evaluate schedules every 60 seconds
+    // Fallback refresh every 5 minutes (covers single-item playlists
+    // where goToNext may never trigger the loop-based refresh)
     const intervalId = window.setInterval(() => {
-      loadContent();
-    }, 60_000);
+      loadContent(true);
+    }, 300_000);
 
     return () => {
       window.clearInterval(intervalId);
