@@ -441,6 +441,19 @@ export default class HtmlController {
       return response.badRequest({ error: 'Invalid filename generated' })
     }
 
+    // Regenerate QR code if the original had one
+    let dupQrDataUri: string | null = null
+    if (originalPlayer.qrUrl) {
+      try {
+        dupQrDataUri = await QRCode.toDataURL(originalPlayer.qrUrl, {
+          errorCorrectionLevel: 'M',
+          width: 240,
+        })
+      } catch {
+        // non-fatal
+      }
+    }
+
     // Generate HTML content with original player settings
     const html = this.makeHtmlDoc({
       title: originalPlayer.title,
@@ -452,6 +465,7 @@ export default class HtmlController {
       textAlign: originalPlayer.textAlign,
       paddingPx: originalPlayer.paddingPx,
       maxWidthPx: originalPlayer.maxWidthPx,
+      qrDataUri: dupQrDataUri,
     })
 
     // Save the new HTML file
@@ -471,6 +485,7 @@ export default class HtmlController {
       textAlign: originalPlayer.textAlign,
       paddingPx: originalPlayer.paddingPx,
       maxWidthPx: originalPlayer.maxWidthPx,
+      qrUrl: originalPlayer.qrUrl ?? null,
       schedule: originalPlayer.schedule,
       lastModified: auth.user?.id || 0,
     })
@@ -495,10 +510,18 @@ export default class HtmlController {
       'paddingPx',
       'maxWidthPx',
       'schedule',
+      'qrUrl',
     ])
 
     if (updateData.schedule) {
       updateData.schedule = this.normalizeSchedule(updateData.schedule)
+    }
+
+    if ('qrUrl' in updateData) {
+      updateData.qrUrl =
+        updateData.qrUrl && typeof updateData.qrUrl === 'string' && updateData.qrUrl.trim()
+          ? String(updateData.qrUrl).trim().slice(0, 2048)
+          : null
     }
 
     htmlPlayer.merge({
@@ -511,6 +534,17 @@ export default class HtmlController {
     if (updateData.bodyHtml && htmlPlayer.htmlUrl) {
       const filename = htmlPlayer.htmlUrl.split('/').pop()
       if (filename) {
+        let qrDataUri: string | null = null
+        if (htmlPlayer.qrUrl) {
+          try {
+            qrDataUri = await QRCode.toDataURL(htmlPlayer.qrUrl, {
+              errorCorrectionLevel: 'M',
+              width: 240,
+            })
+          } catch {
+            // non-fatal
+          }
+        }
         const html = this.makeHtmlDoc({
           title: htmlPlayer.title,
           bodyHtml: htmlPlayer.bodyHtml,
@@ -521,6 +555,7 @@ export default class HtmlController {
           textAlign: htmlPlayer.textAlign,
           paddingPx: htmlPlayer.paddingPx,
           maxWidthPx: htmlPlayer.maxWidthPx,
+          qrDataUri,
         })
         await MediaService.writeFile(filename, html)
       }

@@ -25,6 +25,7 @@ export type Row = {
   mediaUrl?: string;
   durationMs?: number;
   schedule?: Schedule;
+  qrUrl?: string;
 };
 
 export type EditPayload = {
@@ -34,6 +35,7 @@ export type EditPayload = {
   deadlineISO?: string;
   file?: File | null;
   schedule: Schedule;
+  qrUrl?: string;
 };
 
 interface EditDialogProps {
@@ -72,6 +74,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
   const [nome, setNome] = React.useState('');
   const [aviso, setAviso] = React.useState('');
   const [deadlineISO, setDeadlineISO] = React.useState('');
+  const [qrUrl, setQrUrl] = React.useState('');
   const [file, setFile] = React.useState<File | null>(null);
   const [schedule, setSchedule] = React.useState<Schedule>(DEFAULT_SCHEDULE);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -81,6 +84,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
       setNome(row.nome);
       setAviso(row.aviso ?? '');
       setDeadlineISO(row.deadlineISO ?? '');
+      setQrUrl(row.qrUrl ?? '');
       setSchedule(row.schedule ?? DEFAULT_SCHEDULE);
       setFile(null);
     }
@@ -118,7 +122,10 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
       tipo: row.tipo,
       schedule,
     };
-    if (row.tipo === 'Aviso') payload.aviso = aviso;
+    if (row.tipo === 'Aviso') {
+      payload.aviso = aviso;
+      payload.qrUrl = qrUrl || undefined;
+    }
     if (row.tipo === 'Contador') {
       payload.deadlineISO = deadlineISO;
     }
@@ -148,6 +155,18 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
             minRows={3}
             value={aviso}
             onChange={e => setAviso(e.target.value)}
+          />
+        )}
+
+        {row?.tipo === 'Aviso' && (
+          <TextField
+            label="Link para QR Code (opcional)"
+            fullWidth
+            type="url"
+            value={qrUrl}
+            onChange={e => setQrUrl(e.target.value)}
+            helperText="Um QR code será exibido no canto inferior direito da tela"
+            placeholder="https://exemplo.com"
           />
         )}
 

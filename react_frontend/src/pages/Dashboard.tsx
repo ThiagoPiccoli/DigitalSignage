@@ -76,6 +76,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
     bodyHtml: string;
     htmlUrl: string;
     bgColor: string;
+    qrUrl?: string | null;
     schedule?: Schedule;
     createdAt: string;
     lastModified: number;
@@ -103,6 +104,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
     source: 'html' | 'player';
     fileType: 'aviso' | 'contador' | 'video' | 'image' | 'cardapio-ru';
     bgColor?: string;
+    qrUrl?: string;
   };
 
   const extractDeadlineISO = (bodyHtml: string) => {
@@ -266,6 +268,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
         mediaUrl: item.htmlUrl,
         schedule: normalizeSchedule(item.schedule),
         bgColor: item.bgColor,
+        qrUrl: item.qrUrl ?? undefined,
       }));
 
       const mediaRows: DashboardRow[] = mediaData.map(item => ({
@@ -361,6 +364,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
           title: string;
           bodyHtml?: string;
           schedule: Schedule;
+          qrUrl?: string | null;
         } = {
           title: values.nome,
           schedule: values.schedule,
@@ -368,6 +372,9 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
 
         if (values.tipo === 'Aviso' && values.aviso) {
           payload.bodyHtml = values.aviso;
+        }
+        if (values.tipo === 'Aviso') {
+          payload.qrUrl = values.qrUrl ?? null;
         }
 
         const res = await api(`/html/${editRow.id}`, {
