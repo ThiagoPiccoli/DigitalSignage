@@ -80,7 +80,7 @@ export default class HtmlController {
     textAlign?: string
     paddingPx?: number
     maxWidthPx?: number
-    qrDataUri?: string | null
+    qrSvg?: string | null
   }): string {
     const {
       title = 'Aviso',
@@ -92,7 +92,7 @@ export default class HtmlController {
       textAlign = 'center',
       paddingPx = DEFAULT_HTML_PADDING,
       maxWidthPx = DEFAULT_HTML_MAX_WIDTH,
-      qrDataUri = null,
+      qrSvg = null,
     } = options
 
     const safeBody = MediaService.sanitizeUserHtml(bodyHtml)
@@ -172,15 +172,16 @@ export default class HtmlController {
     word-wrap:break-word;overflow-wrap:break-word;
   }
   .qr-overlay{
-    position:fixed;bottom:20px;right:20px;z-index:100;
-    background:rgba(255,255,255,0.92);padding:10px;border-radius:10px;
+    position:fixed;bottom:24px;right:24px;z-index:100;
+    background:#ffffff;padding:12px 12px 8px;
+    border-radius:10px;
     display:flex;flex-direction:column;align-items:center;gap:6px;
-    box-shadow:0 4px 16px rgba(0,0,0,0.4);
+    box-shadow:0 6px 24px rgba(0,0,0,0.55);
   }
-  .qr-overlay img{width:120px;height:120px;display:block;}
+  .qr-overlay svg{width:150px;height:150px;display:block;}
   .qr-overlay span{
-    font-size:11px;color:#1e293b;font-weight:600;
-    letter-spacing:.04em;text-transform:uppercase;
+    font-size:11px;color:#1e293b;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;
   }
 </style>
 </head>
@@ -194,7 +195,7 @@ export default class HtmlController {
     <div class="divider"></div>
     <div class="body">${safeBody}</div>
   </div>
-  ${qrDataUri ? `<div class="qr-overlay"><img src="${qrDataUri}" alt="QR Code"/><span>Acesse</span></div>` : ''}
+  ${qrSvg ? `<div class="qr-overlay">${qrSvg}<span>Acesse</span></div>` : ''}
 </body>
 </html>`
   }
@@ -236,13 +237,18 @@ export default class HtmlController {
       return response.badRequest({ error: 'filename must end with .html' })
     }
 
-    let qrDataUri: string | null = null
+    let qrSvg: string | null = null
     if (qrUrl && typeof qrUrl === 'string' && qrUrl.trim()) {
       try {
         const safeQrUrl = qrUrl.trim().slice(0, 2048)
-        qrDataUri = await QRCode.toDataURL(safeQrUrl, { errorCorrectionLevel: 'M', width: 240 })
-      } catch {
-        // QR generation failure is non-fatal; proceed without it
+        qrSvg = await QRCode.toString(safeQrUrl, {
+          type: 'svg',
+          errorCorrectionLevel: 'M',
+          width: 200,
+          margin: 1,
+        })
+      } catch (err) {
+        console.error('QR generation failed:', err)
       }
     }
 
@@ -256,7 +262,7 @@ export default class HtmlController {
       textAlign,
       paddingPx,
       maxWidthPx,
-      qrDataUri,
+      qrSvg,
     })
 
     await MediaService.writeFile(baseName, html)
@@ -442,15 +448,17 @@ export default class HtmlController {
     }
 
     // Regenerate QR code if the original had one
-    let dupQrDataUri: string | null = null
+    let dupQrSvg: string | null = null
     if (originalPlayer.qrUrl) {
       try {
-        dupQrDataUri = await QRCode.toDataURL(originalPlayer.qrUrl, {
+        dupQrSvg = await QRCode.toString(originalPlayer.qrUrl, {
+          type: 'svg',
           errorCorrectionLevel: 'M',
-          width: 240,
+          width: 200,
+          margin: 1,
         })
-      } catch {
-        // non-fatal
+      } catch (err) {
+        console.error('QR generation failed (duplicate):', err)
       }
     }
 
@@ -465,7 +473,7 @@ export default class HtmlController {
       textAlign: originalPlayer.textAlign,
       paddingPx: originalPlayer.paddingPx,
       maxWidthPx: originalPlayer.maxWidthPx,
-      qrDataUri: dupQrDataUri,
+      qrSvg: dupQrSvg,
     })
 
     // Save the new HTML file
@@ -534,15 +542,17 @@ export default class HtmlController {
     if (updateData.bodyHtml && htmlPlayer.htmlUrl) {
       const filename = htmlPlayer.htmlUrl.split('/').pop()
       if (filename) {
-        let qrDataUri: string | null = null
+        let qrSvg: string | null = null
         if (htmlPlayer.qrUrl) {
           try {
-            qrDataUri = await QRCode.toDataURL(htmlPlayer.qrUrl, {
+            qrSvg = await QRCode.toString(htmlPlayer.qrUrl, {
+              type: 'svg',
               errorCorrectionLevel: 'M',
-              width: 240,
+              width: 200,
+              margin: 1,
             })
-          } catch {
-            // non-fatal
+          } catch (err) {
+            console.error('QR generation failed (update):', err)
           }
         }
         const html = this.makeHtmlDoc({
@@ -555,7 +565,7 @@ export default class HtmlController {
           textAlign: htmlPlayer.textAlign,
           paddingPx: htmlPlayer.paddingPx,
           maxWidthPx: htmlPlayer.maxWidthPx,
-          qrDataUri,
+          qrSvg,
         })
         await MediaService.writeFile(filename, html)
       }
