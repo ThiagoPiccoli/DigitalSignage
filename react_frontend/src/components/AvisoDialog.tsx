@@ -18,6 +18,7 @@ export type AvisoRow = {
   aviso: string;
   schedule: Schedule;
   bgColor: string;
+  qrUrl: string;
 };
 
 interface AvisoDialogProps {
@@ -41,6 +42,7 @@ export default function AvisoDialog({
             ...row,
             schedule: row.schedule ?? DEFAULT_SCHEDULE,
             bgColor: row.bgColor || '#000000',
+            qrUrl: row.qrUrl || '',
           }
         : null,
     );
@@ -83,6 +85,15 @@ export default function AvisoDialog({
           onChange={handleChange('bgColor')}
           helperText="Cor de fundo do aviso"
           slotProps={{ inputLabel: { shrink: true } }}
+        />
+        <TextField
+          label="Link para QR Code (opcional)"
+          fullWidth
+          type="url"
+          value={values?.qrUrl ?? ''}
+          onChange={handleChange('qrUrl')}
+          helperText="Um QR code será exibido no canto inferior direito da tela"
+          placeholder="https://exemplo.com"
         />
         {values && (
           <Box sx={{ mt: 1 }}>

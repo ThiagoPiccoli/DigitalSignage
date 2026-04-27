@@ -440,6 +440,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
           bodyHtml: values.aviso,
           bgColor: values.bgColor,
           schedule: values.schedule,
+          qrUrl: values.qrUrl || undefined,
         }),
       });
       if (res.ok) {
@@ -1038,6 +1039,7 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
                 aviso: '',
                 schedule: DEFAULT_SCHEDULE,
                 bgColor: '#000000',
+                qrUrl: '',
               }),
           },
           {

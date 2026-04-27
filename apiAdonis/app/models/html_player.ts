@@ -41,6 +41,9 @@ export default class HtmlPlayer extends BaseModel {
   declare maxWidthPx: number
 
   @column()
+  declare qrUrl: string | null
+
+  @column()
   declare lastModified: number
 
   @belongsTo(() => User, { foreignKey: 'lastModified' })

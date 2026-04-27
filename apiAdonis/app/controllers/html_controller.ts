@@ -1,4 +1,5 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import QRCode from 'qrcode'
 import HtmlPlayer from '#models/html_player'
 import MediaService from '../services/media_service.js'
 import CardapioService, { type CardapioData } from '../services/cardapio_service.js'
@@ -79,6 +80,7 @@ export default class HtmlController {
     textAlign?: string
     paddingPx?: number
     maxWidthPx?: number
+    qrDataUri?: string | null
   }): string {
     const {
       title = 'Aviso',
@@ -90,6 +92,7 @@ export default class HtmlController {
       textAlign = 'center',
       paddingPx = DEFAULT_HTML_PADDING,
       maxWidthPx = DEFAULT_HTML_MAX_WIDTH,
+      qrDataUri = null,
     } = options
 
     const safeBody = MediaService.sanitizeUserHtml(bodyHtml)
@@ -168,6 +171,17 @@ export default class HtmlController {
     color:rgba(203,213,225,0.85);max-width:700px;
     word-wrap:break-word;overflow-wrap:break-word;
   }
+  .qr-overlay{
+    position:fixed;bottom:20px;right:20px;z-index:100;
+    background:rgba(255,255,255,0.92);padding:10px;border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  }
+  .qr-overlay img{width:120px;height:120px;display:block;}
+  .qr-overlay span{
+    font-size:11px;color:#1e293b;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;
+  }
 </style>
 </head>
 <body>
@@ -180,6 +194,7 @@ export default class HtmlController {
     <div class="divider"></div>
     <div class="body">${safeBody}</div>
   </div>
+  ${qrDataUri ? `<div class="qr-overlay"><img src="${qrDataUri}" alt="QR Code"/><span>Acesse</span></div>` : ''}
 </body>
 </html>`
   }
@@ -200,6 +215,7 @@ export default class HtmlController {
       paddingPx = DEFAULT_HTML_PADDING,
       maxWidthPx = DEFAULT_HTML_MAX_WIDTH,
       schedule,
+      qrUrl,
     } = request.only([
       'filename',
       'title',
@@ -212,11 +228,22 @@ export default class HtmlController {
       'paddingPx',
       'maxWidthPx',
       'schedule',
+      'qrUrl',
     ])
 
     const baseName = MediaService.sanitizeFilename(filename || '') || `aviso-${Date.now()}.html`
     if (!MediaService.isHtmlFile(baseName)) {
       return response.badRequest({ error: 'filename must end with .html' })
+    }
+
+    let qrDataUri: string | null = null
+    if (qrUrl && typeof qrUrl === 'string' && qrUrl.trim()) {
+      try {
+        const safeQrUrl = qrUrl.trim().slice(0, 2048)
+        qrDataUri = await QRCode.toDataURL(safeQrUrl, { errorCorrectionLevel: 'M', width: 240 })
+      } catch {
+        // QR generation failure is non-fatal; proceed without it
+      }
     }
 
     const html = this.makeHtmlDoc({
@@ -229,6 +256,7 @@ export default class HtmlController {
       textAlign,
       paddingPx,
       maxWidthPx,
+      qrDataUri,
     })
 
     await MediaService.writeFile(baseName, html)
@@ -248,6 +276,7 @@ export default class HtmlController {
       textAlign: textAlign || 'center',
       paddingPx: paddingPx,
       maxWidthPx: maxWidthPx,
+      qrUrl: qrUrl ? String(qrUrl).trim().slice(0, 2048) : null,
       schedule: this.normalizeSchedule(schedule),
       lastModified: auth.user?.id || 0,
     })
