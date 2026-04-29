@@ -8,7 +8,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { CloudUpload } from '@mui/icons-material';
 import React from 'react';
 import ScheduleFields, {
   DEFAULT_SCHEDULE,
@@ -33,7 +32,6 @@ export type EditPayload = {
   tipo: string;
   aviso?: string;
   deadlineISO?: string;
-  file?: File | null;
   schedule: Schedule;
   qrUrl?: string;
 };
@@ -43,12 +41,6 @@ interface EditDialogProps {
   onClose: () => void;
   onSave: (values: EditPayload) => void;
 }
-
-const ACCEPT_MAP: Record<string, string> = {
-  Vídeo: 'video/mp4,video/webm,video/ogg',
-  Imagem:
-    'image/png,image/jpeg,image/jpg,image/gif,image/webp,image/bmp,image/svg+xml,.jpg,.jpeg',
-};
 
 function normalizeMediaUrl(url: string) {
   if (/^https?:\/\//i.test(url)) {
@@ -75,9 +67,7 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
   const [aviso, setAviso] = React.useState('');
   const [deadlineISO, setDeadlineISO] = React.useState('');
   const [qrUrl, setQrUrl] = React.useState('');
-  const [file, setFile] = React.useState<File | null>(null);
   const [schedule, setSchedule] = React.useState<Schedule>(DEFAULT_SCHEDULE);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     if (row) {
@@ -86,7 +76,6 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
       setDeadlineISO(row.deadlineISO ?? '');
       setQrUrl(row.qrUrl ?? '');
       setSchedule(row.schedule ?? DEFAULT_SCHEDULE);
-      setFile(null);
     }
   }, [row]);
 
@@ -94,21 +83,6 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
   const isScheduleDisabled =
     Array.isArray(schedule.days) && schedule.days.length === 0;
   const isSaveDisabled = !row || !nome.trim();
-
-  const openFilePicker = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFile(e.target.files?.[0] ?? null);
-  };
-
-  const handleFilePickerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      openFilePicker();
-    }
-  };
 
   const handleSave = () => {
     if (!row) return;
@@ -129,7 +103,6 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
     if (row.tipo === 'Contador') {
       payload.deadlineISO = deadlineISO;
     }
-    if (isMedia) payload.file = file;
     onSave(payload);
   };
 
@@ -219,52 +192,6 @@ export default function EditDialog({ row, onClose, onSave }: EditDialogProps) {
                 Arquivo atual: {row.mediaUrl.split('/').pop()}
               </Typography>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPT_MAP[row!.tipo]}
-              hidden
-              onChange={handleFileChange}
-            />
-            <Box
-              onClick={openFilePicker}
-              role="button"
-              tabIndex={0}
-              onKeyDown={handleFilePickerKeyDown}
-              sx={{
-                border: '2px dashed',
-                borderColor: file ? 'primary.main' : 'divider',
-                borderRadius: 2,
-                p: 4,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 1,
-                cursor: 'pointer',
-                bgcolor: file ? 'primary.light' : 'background.default',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  borderColor: 'primary.main',
-                  bgcolor: 'primary.light',
-                },
-              }}
-            >
-              <CloudUpload
-                sx={{
-                  fontSize: 48,
-                  color: file ? 'primary.main' : 'text.secondary',
-                }}
-              />
-              {file ? (
-                <Typography variant="body1" fontWeight="bold" color="primary">
-                  {file.name}
-                </Typography>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Clique para substituir o arquivo (opcional)
-                </Typography>
-              )}
-            </Box>
           </>
         )}
 

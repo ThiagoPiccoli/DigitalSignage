@@ -386,23 +386,12 @@ export default function Dashboard({ adminMode = false }: DashboardProps) {
           throw new Error('Failed to update html content');
         }
       } else {
-        let body: FormData | string;
-        if (values.file) {
-          const fd = new FormData();
-          fd.append('title', values.nome);
-          fd.append('schedule', JSON.stringify(values.schedule));
-          fd.append('file', values.file);
-          body = fd;
-        } else {
-          body = JSON.stringify({
-            title: values.nome,
-            schedule: values.schedule,
-          });
-        }
-
         const res = await api(`/player/${editRow.id}`, {
           method: 'PUT',
-          body,
+          body: JSON.stringify({
+            title: values.nome,
+            schedule: values.schedule,
+          }),
         });
 
         if (!res.ok) {

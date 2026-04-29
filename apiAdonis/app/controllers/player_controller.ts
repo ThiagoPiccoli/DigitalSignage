@@ -80,41 +80,12 @@ export default class PlayerController {
   }
 
   /**
-   * Update player metadata (and optionally replace the media file)
+   * Update player metadata
    */
   public async updateMedia({ request, response, params, auth }: HttpContext) {
     const player = await Player.findOrFail(params.id)
 
     const updateData = request.only(['title', 'durationMs', 'schedule'])
-
-    // Handle optional file replacement
-    const newFile = request.file('file', {
-      size: '500mb',
-      extnames: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'mp4', 'webm', 'ogg', 'mov'],
-    })
-
-    if (newFile) {
-      if (!newFile.isValid) {
-        return response.badRequest({ error: newFile.errors })
-      }
-
-      // Delete old file
-      const oldFilename = player.fileUrl.split('/').pop()
-      if (oldFilename) {
-        try {
-          await MediaService.deleteFile(oldFilename)
-        } catch {
-          // Ignore if old file is already missing
-        }
-      }
-
-      // Upload new file
-      const filename = await MediaService.uploadFile(newFile)
-      const isVideo = MediaService.isVideoFile(newFile.clientName)
-
-      player.fileUrl = MediaService.getFileUrl(filename)
-      player.fileType = isVideo ? 'video' : 'image'
-    }
 
     // Update all fields at once
     player.merge({
